@@ -78,7 +78,8 @@ export function homePage(db: DB, params = new URLSearchParams(), showAdmin = tru
       <p>The bundled demonstration essay (<code>demo/essay-on-attentive-reading.md</code>) exercises Axis A delivery roles, Axis B compositions, <code>.include</code> fragment splicing, <code>{{meta:version}}</code> placeholders, stage guards, and AI disclosure sidecars across Pandoc and Ghost targets.</p>
       <div class="demo-links">
         <a class="btn" href="/demo/html" target="_blank" rel="noopener">Open Rendered HTML Essay →</a>
-        <a class="btn secondary" href="/demo/ghost" target="_blank" rel="noopener">View Expanded Ghost Markdown</a>
+        <a class="btn secondary" href="/demo/md" target="_blank" rel="noopener">View Clean Markdown (no HTML tags)</a>
+        <a class="btn secondary" href="/demo/ghost" target="_blank" rel="noopener">View Ghost CMS Markdown</a>
         <a class="btn secondary" href="/demo/pdf" target="_blank" rel="noopener">Build &amp; Open Screen PDF</a>
       </div>
     </section>

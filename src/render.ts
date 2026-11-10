@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, relative, resolve } from "node:path";
 import { PROJECT_ROOT } from "./db.js";
-import { type AiDisclosureMetadata, extractFrontmatter, renderGhostMarkdown } from "./ghost.js";
+import { type AiDisclosureMetadata, extractFrontmatter, renderCleanMarkdown, renderGhostMarkdown } from "./ghost.js";
 import { ToolError } from "./queries.js";
 
 export const DEMO_ARTICLE_PATH = resolve(PROJECT_ROOT, "demo/essay-on-attentive-reading.md");
@@ -17,7 +17,7 @@ export const LATEX_DIR = resolve(ASSETS_DIR, "latex");
 export const PDF_HEADER = resolve(LATEX_DIR, "pdf-header.tex");
 export const BOX_BLOCKQUOTE = resolve(LATEX_DIR, "box-blockquote.tex");
 
-export const RENDER_FORMATS = ["ghost", "html", "pdf", "pdf-print", "epub", "docx", "rtf"] as const;
+export const RENDER_FORMATS = ["md", "ghost", "html", "pdf", "pdf-print", "epub", "docx", "rtf"] as const;
 export type RenderFormat = (typeof RENDER_FORMATS)[number];
 
 export interface ToolchainStatus {
@@ -78,7 +78,7 @@ const PANDOC_READER = "markdown+fancy_lists+fenced_divs+header_attributes+link_a
 
 export function renderDocument(options: RenderDocumentOptions = {}) {
   const rootDir = options.rootDir ?? PROJECT_ROOT;
-  const formats: RenderFormat[] = options.formats?.length ? options.formats : ["html", "ghost"];
+  const formats: RenderFormat[] = options.formats?.length ? options.formats : ["md", "html", "ghost"];
   const stage = options.stage ?? "final";
   const outDir = resolve(rootDir, options.outputDir ?? "build/renders");
   mkdirSync(outDir, { recursive: true });
@@ -126,6 +126,25 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
 
   try {
     for (const format of formats) {
+      if (format === "md") {
+        const mdContent = renderCleanMarkdown(rawMarkdown, {
+          rootDir,
+          baseDir: dirname(inputPath),
+          stage,
+          aiMetadata,
+        });
+        const outPath = resolve(outDir, `${baseStem}.md`);
+        writeFileSync(outPath, mdContent, "utf8");
+        artifacts.push({
+          format: "md",
+          output_path: relative(rootDir, outPath) || outPath,
+          bytes: Buffer.byteLength(mdContent, "utf8"),
+          warnings: [],
+          ...(options.returnContent ? { content: mdContent } : {}),
+        });
+        continue;
+      }
+
       if (format === "ghost") {
         const ghostContent = renderGhostMarkdown(rawMarkdown, {
           rootDir,
@@ -149,7 +168,7 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
         throw new ToolError(`Pandoc is required to render '${format}', but 'pandoc' was not found on PATH.`);
       }
 
-      const extMap: Record<Exclude<RenderFormat, "ghost">, string> = {
+      const extMap: Record<Exclude<RenderFormat, "ghost" | "md">, string> = {
         html: `${baseStem}.html`,
         pdf: `${baseStem}.pdf`,
         "pdf-print": `${baseStem}-print.pdf`,

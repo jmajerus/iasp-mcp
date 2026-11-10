@@ -5,21 +5,32 @@ import { describe, expect, it } from "vitest";
 import { detectToolchain, renderDocument } from "../src/render.js";
 
 describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
-  it("renders the demo essay to Ghost Markdown and standalone HTML, respecting final vs draft stage", () => {
+  it("renders the demo essay to clean Markdown (md), Ghost Markdown, and standalone HTML, respecting final vs draft stage", () => {
     const tmp = mkdtempSync(join(tmpdir(), "iasp-render-"));
     try {
       const finalBuild = renderDocument({
         source: "demo",
-        formats: ["ghost", "html"],
+        formats: ["md", "ghost", "html"],
         outputDir: tmp,
         stage: "final",
         returnContent: true,
       });
 
+      const mdArtifact = finalBuild.artifacts.find((a) => a.format === "md")!;
       const ghostArtifact = finalBuild.artifacts.find((a) => a.format === "ghost")!;
       const htmlArtifact = finalBuild.artifacts.find((a) => a.format === "html")!;
 
+      expect(mdArtifact.content).toContain("> **◈ PRELUDE**");
+      expect(mdArtifact.content).toContain("> **≡ DEFINITION**");
+      expect(mdArtifact.content).toContain("> ⇆ **Structural markup vs. authoring intent:**");
+      expect(mdArtifact.content).toContain("> **◇ AI DISCLOSURE**");
+      expect(mdArtifact.content).toContain("Included Fragment (`lexical-precision-sidebar.md`)");
+      expect(mdArtifact.content).not.toContain("<div style=");
+      expect(mdArtifact.content).not.toContain("</div>");
+      expect(mdArtifact.content).not.toContain("Draft-only working note:");
+
       expect(ghostArtifact.content).toContain("AI DISCLOSURE");
+      expect(ghostArtifact.content).toContain("<div style=");
       expect(ghostArtifact.content).toContain("Included Fragment (`lexical-precision-sidebar.md`)");
       expect(ghostArtifact.content).toContain("Takeaway:");
       expect(ghostArtifact.content).not.toContain("Draft-only working note:");
@@ -30,13 +41,16 @@ describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
 
       const draftBuild = renderDocument({
         source: "demo",
-        formats: ["ghost", "html"],
+        formats: ["md", "ghost", "html"],
         outputDir: tmp,
         stage: "draft",
         returnContent: true,
       });
+      const draftMd = draftBuild.artifacts.find((a) => a.format === "md")!;
       const draftGhost = draftBuild.artifacts.find((a) => a.format === "ghost")!;
       const draftHtml = draftBuild.artifacts.find((a) => a.format === "html")!;
+      expect(draftMd.content).toContain("Draft-only working note:");
+      expect(draftMd.content).not.toContain("Takeaway:");
       expect(draftGhost.content).toContain("Draft-only working note:");
       expect(draftGhost.content).not.toContain("Takeaway:");
       expect(draftHtml.content).toContain("Draft-only working note:");

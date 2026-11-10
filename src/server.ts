@@ -65,9 +65,21 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
           .end(html);
       }
 
-      if (url.pathname === "/demo/html" || url.pathname === "/demo/ghost" || url.pathname === "/demo/pdf") {
+      if (
+        url.pathname === "/demo/html" ||
+        url.pathname === "/demo/md" ||
+        url.pathname === "/demo/ghost" ||
+        url.pathname === "/demo/pdf"
+      ) {
         if (req.method !== "GET") return void res.writeHead(405, { allow: "GET" }).end();
-        const fmt = url.pathname === "/demo/html" ? "html" : url.pathname === "/demo/ghost" ? "ghost" : "pdf";
+        const fmt =
+          url.pathname === "/demo/html"
+            ? "html"
+            : url.pathname === "/demo/md"
+              ? "md"
+              : url.pathname === "/demo/ghost"
+                ? "ghost"
+                : "pdf";
         const rendered = renderDocument({
           source: "demo",
           formats: [fmt],
@@ -79,7 +91,7 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
             .writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" })
             .end(artifact.content);
         }
-        if (fmt === "ghost") {
+        if (fmt === "md" || fmt === "ghost") {
           return void res
             .writeHead(200, { "content-type": "text/markdown; charset=utf-8", "cache-control": "no-store" })
             .end(artifact.content);

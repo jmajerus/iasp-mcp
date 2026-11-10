@@ -58,7 +58,7 @@ function parseFormats(raw: string | undefined, fallback: RenderFormat[]): Render
 }
 
 function demoCommand() {
-  const formats = parseFormats(option("--formats"), ["ghost", "html", "pdf", "epub"]);
+  const formats = parseFormats(option("--formats"), ["md", "ghost", "html", "pdf", "epub"]);
   const stage = option("--stage") === "draft" ? "draft" : "final";
   const result = renderDocument({
     source: "demo",
@@ -71,7 +71,7 @@ function demoCommand() {
 
 function renderCommand() {
   const target = argv.find((a) => !a.startsWith("-")) ?? "demo";
-  const formats = parseFormats(option("--formats"), ["html", "ghost"]);
+  const formats = parseFormats(option("--formats"), ["md", "html", "ghost"]);
   const stage = option("--stage") === "draft" ? "draft" : "final";
   const result = renderDocument({ source: target, formats, stage });
   console.log(JSON.stringify(result, null, 2));

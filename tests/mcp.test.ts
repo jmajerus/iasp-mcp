@@ -35,6 +35,12 @@ describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
     expect(homeHtml).toContain("Informative Authoring Semantics Profile");
     expect(homeHtml).toContain("note.insight.major");
 
+    const demoMdRes = await fetch(`${baseUrl}/demo/md`);
+    expect(demoMdRes.status).toBe(200);
+    const demoMd = await demoMdRes.text();
+    expect(demoMd).toContain("> **◈ PRELUDE**");
+    expect(demoMd).not.toContain("<div style=");
+
     const demoGhostRes = await fetch(`${baseUrl}/demo/ghost`);
     expect(demoGhostRes.status).toBe(200);
     const demoGhost = await demoGhostRes.text();

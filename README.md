@@ -59,7 +59,7 @@ run `npx tsx src/cli.ts stdio`:
 | `get_authoring_guide` | Topic-scoped authoring reference (`overview`, `wrappers`, `note-variants`, `sidebars`, `includes`, `tables`, `pagination`, `stages`, `ai-disclosure`, `ghost`) |
 | `inspect_markdown` | Parse a Markdown file or string into an outline of IASP fenced blocks, headings, `.include` targets, quote markers, and `{{meta:...}}` placeholders |
 | `validate_markdown` | Check for unbalanced `:::` fences, level-1 headings inside sidebars, nested shorthand fences, missing `.include` files, and unknown/retired classes |
-| `render_document` | Render a Markdown file, inline Markdown, or `"demo"` to `ghost`, `html`, `pdf`, `pdf-print`, `epub`, `docx`, or `rtf` |
+| `render_document` | Render a Markdown file, inline Markdown, or `"demo"` to `md` (clean pure Markdown using blockquotes + glyph/label headers, no HTML `<div>` tags), `ghost` (Ghost CMS Markdown cards with inline-styled HTML `<div>` blocks), `html`, `pdf`, `pdf-print`, `epub`, `docx`, or `rtf` |
 | `wrap_by_directory` | Preview or apply directory-based IASP wrapper fences (`chapters/`, `sidebars/`, `appendices/`, `articles/`) |
 | `ai_disclosure` | Read or update a per-article `.ai.json` AI disclosure sidecar and preview its rendered block |
 | `iasp_status` | Terminology sync cursor, term/set counts, and local Pandoc/XeLaTeX/qpdf/epubcheck status |

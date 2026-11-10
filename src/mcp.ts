@@ -169,7 +169,7 @@ export function createServer(db: DB): McpServer {
     {
       title: "Render IASP Markdown",
       description:
-        "Render an IASP Markdown file, inline Markdown string, or the built-in 'demo' showcase to one or more formats ('ghost', 'html', 'pdf', 'pdf-print', 'epub', 'docx', 'rtf') using the bundled Pandoc Lua filters, XeLaTeX box environments, CSS stylesheets, and Ghost exporter.",
+        "Render an IASP Markdown file, inline Markdown string, or the built-in 'demo' showcase to one or more formats ('md' for clean pure Markdown using blockquotes + glyph/label headers with no HTML <div> tags, 'ghost' for Ghost CMS Markdown cards with inline-styled HTML <div> blocks, 'html', 'pdf', 'pdf-print', 'epub', 'docx', 'rtf') using the bundled Pandoc Lua filters, XeLaTeX box environments, CSS stylesheets, and Markdown exporters.",
       inputSchema: {
         source: z
           .string()
@@ -180,7 +180,7 @@ export function createServer(db: DB): McpServer {
         formats: z
           .array(z.enum(RENDER_FORMATS))
           .optional()
-          .describe("Output formats to build (default: ['html', 'ghost'])"),
+          .describe("Output formats to build (default: ['md', 'html', 'ghost'])"),
         output_dir: z.string().optional().describe("Output directory (default: build/renders)"),
         output_basename: z.string().optional().describe("Base filename without extension"),
         stage: z.enum(["final", "draft"]).optional().describe("Build stage: 'final' (default, hides .draft) or 'draft' (shows .draft, hides .final)"),
@@ -188,7 +188,7 @@ export function createServer(db: DB): McpServer {
         csl: z.string().optional().describe("Optional path to a .csl citation style file"),
         optimize_pdf: z.boolean().optional().describe("Linearize PDF with qpdf when available (default true)"),
         validate_epub: z.boolean().optional().describe("Run epubcheck on generated EPUB when available (default false)"),
-        return_content: z.boolean().optional().describe("Include rendered text content in the response for 'ghost' and 'html' (default false)"),
+        return_content: z.boolean().optional().describe("Include rendered text content in the response for 'md', 'ghost', and 'html' (default false)"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },

@@ -232,6 +232,26 @@ export function wrapGhostEpigraph(innerMd: string): string {
   return `\n${quoted.join("\n")}\n`;
 }
 
+export function wrapMarkdownBlock(innerMd: string, style: GhostStyle, noBadge = false): string {
+  const lines = innerMd.trim().split(/\r?\n/);
+  if (noBadge) {
+    const quoted = lines.map((l) => (l.trim() ? `> ${l}` : ">"));
+    return `\n${quoted.join("\n")}\n`;
+  }
+  if (style.glyphOnly) {
+    const first = lines[0] ?? "";
+    const canInline = first.length > 0 && !/^(#{1,6}\s|[-*+]\s|\d+\.\s|>)/.test(first.trim());
+    if (canInline) {
+      const rest = lines.slice(1).map((l) => (l.trim() ? `> ${l}` : ">"));
+      return `\n${[`> ${style.glyph} ${first}`, ...rest].join("\n")}\n`;
+    }
+    const quoted = lines.map((l) => (l.trim() ? `> ${l}` : ">"));
+    return `\n> ${style.glyph}\n>\n${quoted.join("\n")}\n`;
+  }
+  const quoted = lines.map((l) => (l.trim() ? `> ${l}` : ">"));
+  return `\n> **${style.glyph} ${style.label}**\n>\n${quoted.join("\n")}\n`;
+}
+
 export interface AiDisclosureMetadata {
   turns?: number;
   turns_fuzzy_min?: number;
@@ -291,7 +311,11 @@ export function formatDisclosureLine(template: string, tokens: Record<string, st
   return line;
 }
 
-export function injectAiDisclosures(body: string, metadata: AiDisclosureMetadata): string {
+export function injectAiDisclosures(
+  body: string,
+  metadata: AiDisclosureMetadata,
+  mode: "ghost" | "md" = "ghost",
+): string {
   if (!metadata || Object.keys(metadata).length === 0) return body;
   if (body.includes("AI Disclosure:") || body.includes("Technical Note:")) return body;
 
@@ -307,7 +331,8 @@ export function injectAiDisclosures(body: string, metadata: AiDisclosureMetadata
 
   const variantKey = (metadata.disclosure_variant ?? "ai").trim().toLowerCase();
   const style = NOTE_VARIANT_SPECS[variantKey]?.ghost ?? NOTE_VARIANT_SPECS.ai.ghost;
-  const wrapped = wrapGhostBlock(lines.join("\n\n"), style);
+  const wrapped =
+    mode === "md" ? wrapMarkdownBlock(lines.join("\n\n"), style) : wrapGhostBlock(lines.join("\n\n"), style);
 
   const bodyLines = body.split(/\r?\n/);
   let insertAt = bodyLines.length;
@@ -334,6 +359,7 @@ export interface GhostRenderOptions {
   rootDir?: string;
   baseDir?: string;
   stage?: "final" | "draft";
+  mode?: "ghost" | "md";
   metadata?: Record<string, string>;
   aiMetadata?: AiDisclosureMetadata;
 }
@@ -342,6 +368,8 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
   const rootDir = options.rootDir ?? PROJECT_ROOT;
   const baseDir = options.baseDir ?? rootDir;
   const stage = options.stage ?? "final";
+  const mode = options.mode ?? "ghost";
+  const wrapBlock = mode === "md" ? wrapMarkdownBlock : wrapGhostBlock;
   const { frontmatter, bodyLines } = extractFrontmatter(markdown);
   const meta = { ...frontmatter, ...(options.metadata ?? {}) };
 
@@ -387,27 +415,27 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
     if (classes.includes("note")) {
       const variant = detectNoteVariantKey(classes);
       const style = NOTE_VARIANT_SPECS[variant]?.ghost ?? NOTE_VARIANT_SPECS.insight.ghost;
-      return wrapGhostBlock(inner, style, noBadge);
+      return wrapBlock(inner, style, noBadge);
     }
 
     if (classes.some((c) => ["sidebar", "sidebar-block", "aside", "sidebar-inline"].includes(c))) {
-      return wrapGhostBlock(inner, SIDEBAR_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, SIDEBAR_GHOST_STYLE, noBadge);
     }
 
     if (classes.includes("callout")) {
-      return wrapGhostBlock(inner, CALLOUT_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, CALLOUT_GHOST_STYLE, noBadge);
     }
 
     if (classes.includes("bridge") || classes.includes("bridgehead")) {
-      return wrapGhostBlock(inner, BRIDGE_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, BRIDGE_GHOST_STYLE, noBadge);
     }
 
     if (classes.includes("example")) {
-      return wrapGhostBlock(inner, EXAMPLE_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, EXAMPLE_GHOST_STYLE, noBadge);
     }
 
     if (classes.includes("definition")) {
-      return wrapGhostBlock(inner, DEFINITION_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, DEFINITION_GHOST_STYLE, noBadge);
     }
 
     if (classes.includes("epigraph") || classes.includes("epigraph-inline")) {
@@ -449,7 +477,14 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
   };
 
   const renderedBody = renderNodes(nodes, baseDir);
-  return options.aiMetadata ? injectAiDisclosures(renderedBody, options.aiMetadata) : renderedBody;
+  const withDisclosures = options.aiMetadata
+    ? injectAiDisclosures(renderedBody, options.aiMetadata, mode)
+    : renderedBody;
+  return mode === "md" ? `${withDisclosures.trim().replace(/\n{3,}/g, "\n\n")}\n` : withDisclosures;
+}
+
+export function renderCleanMarkdown(markdown: string, options: Omit<GhostRenderOptions, "mode"> = {}): string {
+  return renderGhostMarkdown(markdown, { ...options, mode: "md" });
 }
 
 export function exportGhostFile(inputPath: string, outputPath?: string, options: Omit<GhostRenderOptions, "baseDir"> = {}): {
