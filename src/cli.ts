@@ -1,4 +1,7 @@
-import { openDb } from "./db.js";
+import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { join } from "node:path";
+import Database from "better-sqlite3";
+import { SCHEMA_VERSION, openDb } from "./db.js";
 import { validateMarkdown } from "./markdown.js";
 import { composeIntent, iaspStatus } from "./queries.js";
 import { type RenderFormat, RENDER_FORMATS, renderDocument } from "./render.js";
@@ -14,6 +17,9 @@ import { reportProgress, runTermSync, startTermSync, terminologyClient, terminol
  *   iasp-mcp render <path> [--formats html,ghost,pdf] [--stage final|draft]
  *   iasp-mcp validate <path>           Validates IASP fences, sidebars, classes, and includes
  *   iasp-mcp compose <expr>            Inspects a composed IASP expression (e.g. note.insight.major)
+ *   iasp-mcp migrate [--backup <file>] Brings the store up to this build's schema, first copying it to <file> when
+ *                                      that changes the schema (the deploy keeps the copy for a rollback)
+ *   iasp-mcp backup [--dir data/backups] [--keep 14]
  *   iasp-mcp status                    Prints terminology cursor, term counts, and toolchain status
  */
 
@@ -91,6 +97,40 @@ function composeCommand() {
   console.log(JSON.stringify(composeIntent(db, { composition: expr }), null, 2));
 }
 
+async function migrateCommand() {
+  const file = process.env.IASP_DB ?? "data/iasp.db";
+  const backup = option("--backup");
+  if (backup && existsSync(file)) {
+    const old = new Database(file, { readonly: true, fileMustExist: true });
+    const version = Number(old.pragma("user_version", { simple: true }));
+    if (version < SCHEMA_VERSION) {
+      rmSync(backup, { force: true });
+      await old.backup(backup);
+      console.log(`Copied the store at schema ${version} to ${backup}.`);
+    }
+    old.close();
+  }
+  const db = openDb(file);
+  console.log(`The store is at schema ${db.pragma("user_version", { simple: true })}.`);
+  db.close();
+}
+
+async function backupCommand() {
+  const dir = option("--dir") ?? "data/backups";
+  const keep = Number(option("--keep") ?? 14);
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, `iasp-${new Date().toISOString().slice(0, 10)}.db`);
+  const db = openDb();
+  await db.backup(file);
+  db.close();
+  const old = readdirSync(dir)
+    .filter((f) => /^iasp-\d{4}-\d\d-\d\d\.db$/.test(f))
+    .sort()
+    .slice(0, -keep);
+  for (const f of old) rmSync(join(dir, f));
+  console.log(`Backed up to ${file}${old.length ? `; removed ${old.length} older` : ""}.`);
+}
+
 const commands: Record<string, () => unknown> = {
   serve: serveCommand,
   stdio: () => serveStdio(openDb()),
@@ -99,6 +139,8 @@ const commands: Record<string, () => unknown> = {
   render: renderCommand,
   validate: validateCommand,
   compose: composeCommand,
+  migrate: migrateCommand,
+  backup: backupCommand,
   status: () => console.log(JSON.stringify(iaspStatus(openDb()), null, 2)),
 };
 

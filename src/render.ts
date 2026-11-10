@@ -29,13 +29,27 @@ export interface ToolchainStatus {
 
 let cachedToolchain: ToolchainStatus | null = null;
 
+function runEpubcheck(args: string[], timeout = 30_000) {
+  const jarPath = "/usr/share/java/epubcheck.jar";
+  if (existsSync(jarPath)) {
+    return spawnSync("java", ["-jar", jarPath, ...args], { encoding: "utf8", timeout });
+  }
+  return spawnSync("epubcheck", args, { encoding: "utf8", timeout });
+}
+
 export function detectToolchain(force = false): ToolchainStatus {
   if (cachedToolchain && !force) return cachedToolchain;
-  const probe = (cmd: string, args = ["--version"], allowVersionOnNonZero = false): { available: boolean; version?: string } => {
+  const probe = (cmd: string, args = ["--version"]): { available: boolean; version?: string } => {
     const res = spawnSync(cmd, args, { encoding: "utf8", timeout: 5000 });
+    if (res.error || res.status !== 0) return { available: false };
+    const firstLine = (res.stdout || res.stderr || "").split(/\r?\n/).find((l) => l.trim().length > 0)?.trim();
+    return { available: true, ...(firstLine ? { version: firstLine } : {}) };
+  };
+  const probeEpubcheck = (): { available: boolean; version?: string } => {
+    const res = runEpubcheck(["--version"], 5000);
     if (res.error) return { available: false };
     const out = (res.stdout || res.stderr || "").trim();
-    if (res.status !== 0 && !(allowVersionOnNonZero && out.length > 0)) return { available: false };
+    if (!out || out.includes("not found")) return { available: false };
     const firstLine = out.split(/\r?\n/).find((l) => l.trim().length > 0)?.trim();
     return { available: true, ...(firstLine ? { version: firstLine } : {}) };
   };
@@ -43,7 +57,7 @@ export function detectToolchain(force = false): ToolchainStatus {
     pandoc: probe("pandoc"),
     xelatex: probe("xelatex"),
     qpdf: probe("qpdf"),
-    epubcheck: probe("epubcheck", ["--version"], true),
+    epubcheck: probeEpubcheck(),
   };
   return cachedToolchain;
 }
@@ -80,7 +94,8 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
   const rootDir = options.rootDir ?? PROJECT_ROOT;
   const formats: RenderFormat[] = options.formats?.length ? options.formats : ["md", "html", "ghost"];
   const stage = options.stage ?? "final";
-  const outDir = resolve(rootDir, options.outputDir ?? "build/renders");
+  const defaultOutDir = process.env.IASP_RENDER_DIR ?? "build/renders";
+  const outDir = resolve(rootDir, options.outputDir ?? defaultOutDir);
   mkdirSync(outDir, { recursive: true });
 
   let inputPath: string;
@@ -276,7 +291,7 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
 
         let epubcheckPassed: boolean | undefined;
         if (format === "epub" && (options.validateEpub ?? false) && toolchain.epubcheck.available) {
-          const eres = spawnSync("epubcheck", [outPath], { encoding: "utf8", timeout: 30_000 });
+          const eres = runEpubcheck([outPath], 30_000);
           epubcheckPassed = eres.status === 0;
           if (!epubcheckPassed && eres.stderr) {
             warnings.push(...eres.stderr.split(/\r?\n/).filter(Boolean));

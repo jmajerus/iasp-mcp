@@ -1,0 +1,49 @@
+{
+  "VsCodeTaskButtons.tasks": [
+    {
+      "label": "$(server) Deploy IASP",
+      "tooltip": "npm run deploy — build, test, install this checkout as a release on iasp-mcp.localdomain, migrate, sync terms, restart, health-check, roll back on failure",
+      "alignment": "left",
+      "tasks": [
+        {
+          "label": "Deploy this checkout",
+          "task": "Deploy IASP",
+          "description": "$(device-desktop) Local working tree, unpushed changes included"
+        },
+        {
+          "label": "Deploy this checkout without tests",
+          "task": "Deploy IASP: skip tests",
+          "description": "$(debug-step-over) --skip-tests"
+        },
+        {
+          "label": "Push the server's settings",
+          "task": "Deploy IASP: settings",
+          "description": "$(key) --env — copy TERMINOLOGY_BASE, IASP_TERMS_SYNC, and ACCESS_TEAM_DOMAIN from .env and restart"
+        },
+        {
+          "label": "Provision LXC (one-time)",
+          "task": "Deploy IASP: provision",
+          "description": "$(tools) --provision — install Node 22, Pandoc, XeLaTeX, qpdf, epubcheck, and create iasp user"
+        }
+      ]
+    },
+    {
+      "label": "$(beaker) Test",
+      "task": "Test",
+      "tooltip": "npm test",
+      "alignment": "left"
+    }
+  ],
+  "statusProbe.items": [
+    {
+      "id": "iasp-server",
+      "command": "node tools/iasp-status.mjs",
+      "intervalSeconds": 300,
+      "alignment": "left",
+      "priority": -101,
+      "refreshOnTasks": [
+        "Deploy IASP*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Deploy IASP",
+      "type": "npm",
+      "script": "deploy",
+      "problemMatcher": []
+    },
+    {
+      "label": "Deploy IASP: skip tests",
+      "type": "shell",
+      "command": "npm run deploy -- --skip-tests",
+      "problemMatcher": []
+    },
+    {
+      "label": "Deploy IASP: settings",
+      "type": "shell",
+      "command": "npm run deploy -- --env",
+      "problemMatcher": []
+    },
+    {
+      "label": "Deploy IASP: provision",
+      "type": "shell",
+      "command": "npm run deploy -- --provision",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test",
+      "type": "npm",
+      "script": "test",
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+[Unit]
+Description=iasp-mcp: back up the iasp store
+
+[Service]
+Type=oneshot
+User=iasp
+Group=iasp
+EnvironmentFile=/etc/iasp-mcp/env
+WorkingDirectory=/opt/iasp-mcp/current
+ExecStart=/usr/bin/node /opt/iasp-mcp/current/dist/cli.js backup --dir /var/lib/iasp-mcp/backups --keep 14
+NoNewPrivileges=yes
+ProtectSystem=strict
+PrivateTmp=yes
+ReadWritePaths=/var/lib/iasp-mcp

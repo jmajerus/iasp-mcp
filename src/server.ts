@@ -96,7 +96,8 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
             .writeHead(200, { "content-type": "text/markdown; charset=utf-8", "cache-control": "no-store" })
             .end(artifact.content);
         }
-        const pdfBytes = readFileSync(resolve(PROJECT_ROOT, artifact.output_path));
+        const pdfPath = resolve(PROJECT_ROOT, artifact.output_path);
+        const pdfBytes = readFileSync(pdfPath);
         return void res
           .writeHead(200, {
             "content-type": "application/pdf",

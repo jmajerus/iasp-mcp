@@ -64,10 +64,20 @@ run `npx tsx src/cli.ts stdio`:
 | `ai_disclosure` | Read or update a per-article `.ai.json` AI disclosure sidecar and preview its rendered block |
 | `iasp_status` | Terminology sync cursor, term/set counts, and local Pandoc/XeLaTeX/qpdf/epubcheck status |
 
-## Verification
+## Verification & deployment
 
 ```sh
 npm run typecheck
 npm test
 npm run build
 ```
+
+To provision and deploy to `iasp-mcp.localdomain`:
+
+```sh
+npm run deploy -- --provision   # One-time setup (Node 22, Pandoc, XeLaTeX, qpdf, epubcheck, iasp user)
+npm run deploy -- --env         # Push TERMINOLOGY_BASE, IASP_TERMS_SYNC, ACCESS_TEAM_DOMAIN from .env
+npm run deploy                  # Build, test, install release, migrate/sync terms, restart, health-check
+npm run status                  # Query /health and git origin lag for the VS Code status bar
+```
+
