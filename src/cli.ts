@@ -63,17 +63,17 @@ function parseFormats(raw: string | undefined, fallback: RenderFormat[]): Render
     .filter((f): f is RenderFormat => (RENDER_FORMATS as readonly string[]).includes(f));
 }
 
-function demoCommand() {
+async function demoCommand() {
   const formats = parseFormats(option("--formats"), ["md", "ghost", "html", "pdf", "epub"]);
   const stage = option("--stage") === "draft" ? "draft" : "final";
   const target = option("--source") ?? "all";
   if (target === "all") {
-    const demo = renderDocument({ source: "demo", formats, stage, validateEpub: true });
-    const interop = renderDocument({ source: "interop", formats, stage, validateEpub: true });
+    const demo = await renderDocument({ source: "demo", formats, stage, validateEpub: true });
+    const interop = await renderDocument({ source: "interop", formats, stage, validateEpub: true });
     console.log(JSON.stringify({ demo, interop }, null, 2));
     return;
   }
-  const result = renderDocument({
+  const result = await renderDocument({
     source: target,
     formats,
     stage,
@@ -82,11 +82,11 @@ function demoCommand() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-function renderCommand() {
+async function renderCommand() {
   const target = argv.find((a) => !a.startsWith("-")) ?? "demo";
   const formats = parseFormats(option("--formats"), ["md", "html", "ghost"]);
   const stage = option("--stage") === "draft" ? "draft" : "final";
-  const result = renderDocument({ source: target, formats, stage });
+  const result = await renderDocument({ source: target, formats, stage });
   console.log(JSON.stringify(result, null, 2));
 }
 

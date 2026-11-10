@@ -70,7 +70,7 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
         if (req.method !== "GET") return void res.writeHead(405, { allow: "GET" }).end();
         const source = demoMatch[1] === "interop" ? "interop" : "demo";
         const fmt = demoMatch[2] as "html" | "md" | "ghost" | "pdf";
-        const rendered = renderDocument({
+        const rendered = await renderDocument({
           source,
           formats: [fmt],
           returnContent: fmt !== "pdf",

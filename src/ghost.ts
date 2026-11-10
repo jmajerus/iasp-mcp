@@ -2,6 +2,16 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { PROJECT_ROOT } from "./db.js";
 import {
+  defaultConceptRef,
+  type ExternalConceptRef,
+  type ParsedQuoteMarker,
+  type ProvenanceManifest,
+  type QuoteProvenance,
+  parseConceptToken,
+  parseQuoteMarkerComment,
+  splitConceptList,
+} from "./provenance.js";
+import {
   BRIDGE_GHOST_STYLE,
   CALLOUT_GHOST_STYLE,
   DEFINITION_GHOST_STYLE,
@@ -283,8 +293,63 @@ const GHOST_MODIFIER_SLUGS: Record<string, string> = {
   closing: "closing",
 };
 
-export function buildSkosBlockAttributes(classes: string[] = []): string {
-  if (!classes.length) return "";
+export interface BlockProvenanceExtras {
+  attrs?: Record<string, string>;
+  quoteInfo?: QuoteProvenance | ParsedQuoteMarker;
+  manifest?: ProvenanceManifest;
+}
+
+export function buildExternalConceptAttributes(extras: BlockProvenanceExtras = {}): string[] {
+  const { attrs = {}, quoteInfo, manifest } = extras;
+  const parts: string[] = [];
+
+  if (quoteInfo) {
+    parts.push(`data-quote-id="${quoteInfo.id}"`);
+    if (quoteInfo.citekey) parts.push(`data-citekey="${quoteInfo.citekey}"`);
+    if (quoteInfo.workKey) parts.push(`data-work-key="${quoteInfo.workKey}"`);
+    if (quoteInfo.locator) parts.push(`data-quote-locator="${quoteInfo.locator}"`);
+  }
+
+  const rawTokens: string[] = [];
+  const seen = new Set<string>();
+  const addToken = (tok: string) => {
+    const parsed = parseConceptToken(tok);
+    if (parsed && !seen.has(parsed.raw)) {
+      seen.add(parsed.raw);
+      rawTokens.push(parsed.raw);
+    }
+  };
+
+  for (const c of quoteInfo?.concepts ?? []) addToken(c);
+  for (const key of ["concepts", "concept", "data-concepts"]) {
+    if (attrs[key]) {
+      for (const c of splitConceptList(attrs[key])) addToken(c.raw);
+    }
+  }
+
+  if (!rawTokens.length) return parts;
+
+  const resolved: ExternalConceptRef[] = rawTokens.map((raw) => {
+    if (manifest?.concepts[raw]) return manifest.concepts[raw];
+    const p = parseConceptToken(raw)!;
+    return defaultConceptRef(p.scheme, p.slug);
+  });
+
+  const rawList = resolved.map((r) => r.raw).join(" ");
+  const uriList = resolved.map((r) => r.uri).join(" ");
+  const termList = resolved.map((r) => r.publicUrl).join(" ");
+  parts.push(`about="${uriList}"`);
+  parts.push(`data-concepts="${rawList}"`);
+  parts.push(`data-concept-uris="${uriList}"`);
+  parts.push(`data-concept-terms="${termList}"`);
+  return parts;
+}
+
+export function buildSkosBlockAttributes(classes: string[] = [], extras: BlockProvenanceExtras = {}): string {
+  const extParts = buildExternalConceptAttributes(extras);
+  if (!classes.length) {
+    return extParts.length ? [`vocab="http://www.w3.org/2004/02/skos/core#"`, ...extParts].join(" ") : "";
+  }
   let deliverySlug: string | null = null;
   const modifierSlugs: string[] = [];
   const hasInsight = classes.includes("insight");
@@ -313,7 +378,9 @@ export function buildSkosBlockAttributes(classes: string[] = []): string {
 
   const conceptSlugs = [...(deliverySlug ? [deliverySlug] : []), ...modifierSlugs];
   const classAttr = `class="${classes.join(" ")}"`;
-  if (!conceptSlugs.length) return classAttr;
+  if (!conceptSlugs.length) {
+    return [classAttr, ...(extParts.length ? [`vocab="http://www.w3.org/2004/02/skos/core#"`, ...extParts] : [])].join(" ");
+  }
 
   const urns = conceptSlugs.map((s) => `urn:iasp:concept:${s}`);
   const termUrls = conceptSlugs.map((s) => `https://vocabulary.majerus.us/api/schemes/iasp/slugs/${s}`);
@@ -329,11 +396,18 @@ export function buildSkosBlockAttributes(classes: string[] = []): string {
   if (modifierSlugs.length) parts.push(`data-iasp-modifiers="${modifierSlugs.join(" ")}"`);
   parts.push(`data-iasp-concepts="${urns.join(" ")}"`);
   parts.push(`data-iasp-terms="${termUrls.join(" ")}"`);
+  parts.push(...extParts);
   return parts.join(" ");
 }
 
-export function wrapGhostBlock(innerMd: string, style: GhostStyle, noBadge = false, classes: string[] = []): string {
-  const skosAttrs = buildSkosBlockAttributes(classes);
+export function wrapGhostBlock(
+  innerMd: string,
+  style: GhostStyle,
+  noBadge = false,
+  classes: string[] = [],
+  extras: BlockProvenanceExtras = {},
+): string {
+  const skosAttrs = buildSkosBlockAttributes(classes, extras);
   const opened = `<div ${skosAttrs ? `${skosAttrs} ` : ""}style="${CONTAINER_CSS(style)}">`;
   let header: string;
   if (noBadge) {
@@ -346,10 +420,14 @@ export function wrapGhostBlock(innerMd: string, style: GhostStyle, noBadge = fal
   return `${header}\n\n${innerMd.trim()}\n\n</div>\n`;
 }
 
-export function wrapGhostEpigraph(innerMd: string): string {
+export function wrapGhostEpigraph(innerMd: string, classes: string[] = ["epigraph"], extras: BlockProvenanceExtras = {}): string {
   const lines = innerMd.trim().split(/\r?\n/);
-  const quoted = lines.map((l) => (l.trim() ? `> ${l}` : ">"));
-  return `\n${quoted.join("\n")}\n`;
+  const quoted = lines.map((l) => (l.trim() ? `> ${l}` : ">")).join("\n");
+  const skosAttrs = buildSkosBlockAttributes(classes, extras);
+  if (skosAttrs && (extras.quoteInfo || (extras.attrs && (extras.attrs.concepts || extras.attrs.concept)))) {
+    return `\n<div ${skosAttrs}>\n\n${quoted}\n\n</div>\n`;
+  }
+  return `\n${quoted}\n`;
 }
 
 export function wrapMarkdownBlock(innerMd: string, style: GhostStyle, noBadge = false): string {
@@ -484,6 +562,7 @@ export interface GhostRenderOptions {
   mode?: "ghost" | "md";
   metadata?: Record<string, string>;
   aiMetadata?: AiDisclosureMetadata;
+  provenanceManifest?: ProvenanceManifest;
 }
 
 export function renderGhostMarkdown(markdown: string, options: GhostRenderOptions = {}): string {
@@ -491,10 +570,17 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
   const baseDir = options.baseDir ?? rootDir;
   const stage = options.stage ?? "final";
   const mode = options.mode ?? "ghost";
-  const wrapBlock = (innerMd: string, style: GhostStyle, noBadge = false, blockClasses: string[] = []) =>
+  const manifest = options.provenanceManifest;
+  const wrapBlock = (
+    innerMd: string,
+    style: GhostStyle,
+    noBadge = false,
+    blockClasses: string[] = [],
+    extras: BlockProvenanceExtras = {},
+  ) =>
     mode === "md"
       ? wrapMarkdownBlock(innerMd, style, noBadge)
-      : wrapGhostBlock(innerMd, style, noBadge, blockClasses);
+      : wrapGhostBlock(innerMd, style, noBadge, blockClasses, extras);
   const { frontmatter, bodyLines } = extractFrontmatter(markdown);
   const meta = { ...frontmatter, ...(options.metadata ?? {}) };
 
@@ -506,19 +592,69 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
 
   const includeStack = new Set<string>();
 
+  const resolveQuoteMarker = (marker: ParsedQuoteMarker): QuoteProvenance | ParsedQuoteMarker => {
+    const fromManifest = manifest?.quotes[String(marker.id)];
+    if (!fromManifest) return marker;
+    return {
+      id: marker.id,
+      citekey: marker.citekey ?? fromManifest.citekey,
+      workKey: marker.workKey ?? fromManifest.workKey,
+      workTitle: fromManifest.workTitle,
+      locator: marker.locator ?? fromManifest.locator,
+      concepts: [...new Set([...fromManifest.concepts, ...marker.concepts])],
+    };
+  };
+
   const renderNodes = (nodeList: AstNode[], currentBaseDir: string): string => {
     const parts: string[] = [];
-    for (const node of nodeList) {
+    let pendingQuote: QuoteProvenance | ParsedQuoteMarker | undefined;
+
+    for (let idx = 0; idx < nodeList.length; idx++) {
+      const node = nodeList[idx];
       if (node.kind === "text") {
+        const qm = parseQuoteMarkerComment(node.text);
+        if (qm) {
+          pendingQuote = resolveQuoteMarker(qm);
+          parts.push(node.text);
+          continue;
+        }
+        if (pendingQuote && node.text.trim().startsWith(">")) {
+          const quoteLines: string[] = [node.text];
+          while (idx + 1 < nodeList.length && nodeList[idx + 1].kind === "text") {
+            const nextText = (nodeList[idx + 1] as TextLineNode).text;
+            if (nextText.trim().startsWith(">")) {
+              quoteLines.push(nextText);
+              idx++;
+            } else {
+              break;
+            }
+          }
+          if (mode === "ghost") {
+            const skosAttrs = buildSkosBlockAttributes(["iasp-quote"], { quoteInfo: pendingQuote, manifest });
+            parts.push(`<div ${skosAttrs}>\n\n${quoteLines.join("\n")}\n\n</div>`);
+          } else {
+            parts.push(quoteLines.join("\n"));
+          }
+          pendingQuote = undefined;
+          continue;
+        }
         parts.push(node.text);
       } else {
-        parts.push(renderFence(node, currentBaseDir));
+        const q = pendingQuote;
+        if (q && !node.classes.includes("article") && !node.classes.includes("include")) {
+          pendingQuote = undefined;
+        }
+        parts.push(renderFence(node, currentBaseDir, q));
       }
     }
     return parts.join("\n");
   };
 
-  const renderFence = (fence: FenceAstNode, currentBaseDir: string): string => {
+  const renderFence = (
+    fence: FenceAstNode,
+    currentBaseDir: string,
+    quoteInfo?: QuoteProvenance | ParsedQuoteMarker,
+  ): string => {
     const { classes, attrs } = fence;
 
     // Stage filtering (.draft vs .final)
@@ -536,35 +672,38 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
 
     const noBadge = classes.includes("nobadge") || classes.includes("no-badge") || classes.includes("badge-off");
     const inner = renderNodes(fence.children, currentBaseDir);
+    const extras: BlockProvenanceExtras = { attrs, quoteInfo, manifest };
 
     if (classes.includes("note")) {
       const variant = detectNoteVariantKey(classes);
       const style = NOTE_VARIANT_SPECS[variant]?.ghost ?? NOTE_VARIANT_SPECS.insight.ghost;
-      return wrapBlock(inner, style, noBadge, classes);
+      return wrapBlock(inner, style, noBadge, classes, extras);
     }
 
     if (classes.some((c) => ["sidebar", "sidebar-block", "aside", "sidebar-inline"].includes(c))) {
-      return wrapBlock(inner, SIDEBAR_GHOST_STYLE, noBadge, classes);
+      return wrapBlock(inner, SIDEBAR_GHOST_STYLE, noBadge, classes, extras);
     }
 
     if (classes.includes("callout")) {
-      return wrapBlock(inner, CALLOUT_GHOST_STYLE, noBadge, classes);
+      return wrapBlock(inner, CALLOUT_GHOST_STYLE, noBadge, classes, extras);
     }
 
     if (classes.includes("bridge") || classes.includes("bridgehead")) {
-      return wrapBlock(inner, BRIDGE_GHOST_STYLE, noBadge, classes);
+      return wrapBlock(inner, BRIDGE_GHOST_STYLE, noBadge, classes, extras);
     }
 
     if (classes.includes("example")) {
-      return wrapBlock(inner, EXAMPLE_GHOST_STYLE, noBadge, classes);
+      return wrapBlock(inner, EXAMPLE_GHOST_STYLE, noBadge, classes, extras);
     }
 
     if (classes.includes("definition")) {
-      return wrapBlock(inner, DEFINITION_GHOST_STYLE, noBadge, classes);
+      return wrapBlock(inner, DEFINITION_GHOST_STYLE, noBadge, classes, extras);
     }
 
     if (classes.includes("epigraph") || classes.includes("epigraph-inline")) {
-      return wrapGhostEpigraph(inner);
+      return mode === "md"
+        ? wrapGhostEpigraph(inner)
+        : wrapGhostEpigraph(inner, classes, extras);
     }
 
     return inner;

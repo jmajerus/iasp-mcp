@@ -43,6 +43,17 @@ function run(body: () => unknown): CallToolResult {
   }
 }
 
+async function runAsync(body: () => Promise<unknown>): Promise<CallToolResult> {
+  try {
+    return json(await body());
+  } catch (error) {
+    if (error instanceof ToolError) {
+      return { isError: true, content: [{ type: "text", text: error.message }] };
+    }
+    throw error;
+  }
+}
+
 const readOnly = {
   readOnlyHint: true,
   destructiveHint: false,
@@ -211,7 +222,7 @@ export function createServer(db: DB): McpServer {
       return_content,
       ...rest
     }) =>
-      run(() =>
+      runAsync(() =>
         renderDocument({
           ...rest,
           outputDir: output_dir,

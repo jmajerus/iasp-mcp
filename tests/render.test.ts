@@ -5,10 +5,10 @@ import { describe, expect, it } from "vitest";
 import { detectToolchain, renderDocument } from "../src/render.js";
 
 describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
-  it("renders the demo essay to clean Markdown (md), Ghost Markdown, and standalone HTML, respecting final vs draft stage", () => {
+  it("renders the demo essay to clean Markdown (md), Ghost Markdown, and standalone HTML, respecting final vs draft stage", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "iasp-render-"));
     try {
-      const finalBuild = renderDocument({
+      const finalBuild = await renderDocument({
         source: "demo",
         formats: ["md", "ghost", "html"],
         outputDir: tmp,
@@ -53,21 +53,30 @@ describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
       expect(htmlArtifact.content).toContain("Included Fragment");
       expect(htmlArtifact.content).not.toContain("Draft-only working note:");
 
-      const interopBuild = renderDocument({
+      const interopBuild = await renderDocument({
         source: "interop",
-        formats: ["md", "html"],
+        formats: ["md", "ghost", "html"],
         outputDir: tmp,
         stage: "final",
         returnContent: true,
       });
       const interopMd = interopBuild.artifacts.find((a) => a.format === "md")!;
+      const interopGhost = interopBuild.artifacts.find((a) => a.format === "ghost")!;
       const interopHtml = interopBuild.artifacts.find((a) => a.format === "html")!;
       expect(interopMd.content).toContain("> **◇ AI DISCLOSURE**");
       expect(interopHtml.content).toContain("class=\"csl-entry\"");
       expect(interopHtml.content).toContain("id=\"ref-montalion2024learning\"");
       expect(interopHtml.content).toContain("id=\"ref-brotherton2015suspicious\"");
+      // External vocabulary concepts & quote provenance retained on HTML and Ghost blocks
+      expect(interopHtml.content).toContain("data-quote-id=\"831\"");
+      expect(interopHtml.content).toContain("data-concepts=\"human-work:confirmation-bias\"");
+      expect(interopHtml.content).toContain("data-concepts=\"human-work:curiosity human-work:learning\"");
+      expect(interopHtml.content).toContain("https://vocabulary.majerus.us/api/schemes/human-work/slugs/confirmation-bias");
+      expect(interopGhost.content).toContain("data-quote-id=\"831\"");
+      expect(interopGhost.content).toContain("data-concepts=\"human-work:confirmation-bias\"");
+      expect(interopGhost.content).toContain("data-concepts=\"human-work:curiosity human-work:confirmation-bias\"");
 
-      const draftBuild = renderDocument({
+      const draftBuild = await renderDocument({
         source: "demo",
         formats: ["md", "ghost", "html"],
         outputDir: tmp,
@@ -88,13 +97,13 @@ describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
     }
   });
 
-  it("renders the demo essay to EPUB and XeLaTeX PDF when pandoc and xelatex are installed", () => {
+  it("renders the demo essay to EPUB and XeLaTeX PDF when pandoc and xelatex are installed", async () => {
     const tc = detectToolchain();
     if (!tc.pandoc.available || !tc.xelatex.available) return;
 
     const tmp = mkdtempSync(join(tmpdir(), "iasp-pdf-epub-"));
     try {
-      const res = renderDocument({
+      const res = await renderDocument({
         source: "demo",
         formats: ["pdf", "epub"],
         outputDir: tmp,

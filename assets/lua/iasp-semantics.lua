@@ -41,6 +41,7 @@ local table_helpers
 local function preprocess_shorthand(doc)
   build_stage_cache = nil
   identifier_registry = {}
+  provenance_manifest_cache = nil
   return shorthand.preprocess_shorthand(doc, meta.capture_document_meta)
 end
 
@@ -1136,6 +1137,174 @@ local IASP_CONCEPT_URN_PREFIX = "urn:iasp:concept:"
 local IASP_PUBLIC_TERM_PREFIX = "https://vocabulary.majerus.us/api/schemes/iasp/slugs/"
 local SKOS_VOCAB_URI = "http://www.w3.org/2004/02/skos/core#"
 
+local provenance_manifest_cache = nil
+
+local function get_provenance_manifest()
+  if provenance_manifest_cache ~= nil then
+    return provenance_manifest_cache
+  end
+  provenance_manifest_cache = { quotes = {}, concepts = {} }
+  local path_val = meta_value("provenance-manifest")
+  if not path_val or path_val == "" then
+    return provenance_manifest_cache
+  end
+  local fh = io.open(path_val, "r")
+  if not fh then
+    return provenance_manifest_cache
+  end
+  local raw = fh:read("*a")
+  fh:close()
+  if raw and raw ~= "" and pandoc.json and pandoc.json.decode then
+    local ok, decoded = pcall(function() return pandoc.json.decode(raw) end)
+    if ok and type(decoded) == "table" then
+      provenance_manifest_cache = {
+        quotes = decoded.quotes or {},
+        concepts = decoded.concepts or {},
+      }
+    end
+  end
+  return provenance_manifest_cache
+end
+
+local function normalize_external_concept_token(token)
+  if not token then return nil end
+  local cleaned = token:gsub("^[,;%s]+", ""):gsub("[,;%s]+$", "")
+  if cleaned == "" then return nil end
+  local colon = cleaned:find(":", 1, true)
+  if colon and colon > 1 then
+    local scheme = cleaned:sub(1, colon - 1):lower()
+    local slug = cleaned:sub(colon + 1):lower():gsub("%s+", "-")
+    if scheme ~= "" and slug ~= "" then
+      return scheme .. ":" .. slug, scheme, slug
+    end
+  end
+  local slug = cleaned:lower():gsub("%s+", "-")
+  return "human-work:" .. slug, "human-work", slug
+end
+
+local function resolve_external_concept_info(raw_token)
+  local key, scheme, slug = normalize_external_concept_token(raw_token)
+  if not key then return nil end
+  local manifest = get_provenance_manifest()
+  local entry = manifest.concepts and manifest.concepts[key]
+  if entry and type(entry) == "table" then
+    return {
+      raw = entry.raw or key,
+      scheme = entry.scheme or scheme,
+      slug = entry.slug or slug,
+      uri = entry.uri or ("urn:quote-mcp:concept:" .. scheme .. ":" .. slug),
+      publicUrl = entry.publicUrl or ("https://vocabulary.majerus.us/api/schemes/" .. scheme .. "/slugs/" .. slug),
+    }
+  end
+  local urn_prefix = "urn:terminology-mcp:concept:" .. scheme .. ":"
+  if scheme == "human-work" then
+    urn_prefix = "urn:quote-mcp:concept:human-work:"
+  elseif scheme == "iasp" then
+    urn_prefix = "urn:iasp:concept:"
+  end
+  return {
+    raw = key,
+    scheme = scheme,
+    slug = slug,
+    uri = urn_prefix .. slug,
+    publicUrl = "https://vocabulary.majerus.us/api/schemes/" .. scheme .. "/slugs/" .. slug,
+  }
+end
+
+local function apply_external_concept_attributes(attr, concept_tokens, quote_info)
+  if not attr then return false end
+  if FORMAT and FORMAT:match("latex") then
+    return false
+  end
+
+  local raw_tokens = {}
+  local seen = {}
+  local function push_token(tok)
+    local norm = normalize_external_concept_token(tok)
+    if norm and not seen[norm] then
+      seen[norm] = true
+      table.insert(raw_tokens, norm)
+    end
+  end
+
+  if quote_info and quote_info.concepts then
+    for _, c in ipairs(quote_info.concepts) do
+      push_token(c)
+    end
+  end
+  if concept_tokens then
+    for _, c in ipairs(concept_tokens) do
+      push_token(c)
+    end
+  end
+
+  for _, key_name in ipairs({ "concepts", "concept" }) do
+    local raw_attr = attr[key_name]
+    if raw_attr and raw_attr ~= "" then
+      for part in raw_attr:gmatch("[^%s,;]+") do
+        push_token(part)
+      end
+      attr[key_name] = nil
+    end
+  end
+
+  if attr["data-concepts"] and attr["data-concepts"] ~= "" then
+    for part in attr["data-concepts"]:gmatch("[^%s,;]+") do
+      push_token(part)
+    end
+  end
+
+  local mutated = false
+  if quote_info then
+    if quote_info.id and not attr["data-quote-id"] then
+      attr["data-quote-id"] = tostring(quote_info.id)
+      mutated = true
+    end
+    if quote_info.citekey and quote_info.citekey ~= "" and not attr["data-citekey"] then
+      attr["data-citekey"] = tostring(quote_info.citekey)
+      mutated = true
+    end
+    if quote_info.workKey and quote_info.workKey ~= "" and not attr["data-work-key"] then
+      attr["data-work-key"] = tostring(quote_info.workKey)
+      mutated = true
+    end
+    if quote_info.locator and quote_info.locator ~= "" and not attr["data-quote-locator"] then
+      attr["data-quote-locator"] = tostring(quote_info.locator)
+      mutated = true
+    end
+  end
+
+  if #raw_tokens == 0 then
+    return mutated
+  end
+
+  local resolved_raw = {}
+  local resolved_uris = {}
+  local resolved_terms = {}
+  for _, tok in ipairs(raw_tokens) do
+    local info = resolve_external_concept_info(tok)
+    if info then
+      table.insert(resolved_raw, info.raw)
+      table.insert(resolved_uris, info.uri)
+      table.insert(resolved_terms, info.publicUrl)
+    end
+  end
+
+  if #resolved_raw > 0 then
+    attr["data-concepts"] = table.concat(resolved_raw, " ")
+    attr["data-concept-uris"] = table.concat(resolved_uris, " ")
+    attr["data-concept-terms"] = table.concat(resolved_terms, " ")
+    if FORMAT and FORMAT:match("html") and not FORMAT:match("epub") then
+      if not attr["about"] then
+        attr["about"] = table.concat(resolved_uris, " ")
+      end
+    end
+    mutated = true
+  end
+
+  return mutated
+end
+
 local LOW_PRIORITY_ARIA = {}
 
 local HEADER_ROLE_ALLOWLIST = {
@@ -1357,8 +1526,9 @@ local function apply_semantic_aliases(el)
 
   assign_aria_role(el.attributes)
   local skos_changed = assign_skos_annotations(el)
+  local ext_changed = apply_external_concept_attributes(el.attributes, nil, nil)
 
-  return mutated or alias_changed or skos_changed
+  return mutated or alias_changed or skos_changed or ext_changed
 end
 
 -- Shorthand fenced divs are implemented in iasp/shorthand.lua.
@@ -1948,7 +2118,103 @@ local latex_wrapper = latex_helpers.create({
   inject_sidebar_glyph = inject_sidebar_glyph,
 })
 
--- LaTeX sidebar wrapper moved to iasp/latex.lua.
+local function parse_quote_marker_raw(block)
+  if not block or block.t ~= "RawBlock" or block.format ~= "html" then
+    return nil
+  end
+  local text = (block.text or ""):gsub("^%s+", ""):gsub("%s+$", "")
+  local q_id, rest = text:match("^<!%-%-%s*quote%s+(%d+)%s*(.-)%s*%-%->$")
+  if not q_id then
+    q_id, rest = text:match("^<!%-%-%s*corpus:quote%s+(%d+)%s*(.-)%s*%-%->$")
+  end
+  if not q_id then
+    return nil
+  end
+  local concepts = {}
+  local citekey = nil
+  local work_key = nil
+  local locator = nil
+
+  if rest and rest ~= "" then
+    for k, v in rest:gmatch('([%w_%-]+)%s*=%s*"(.-)"') do
+      local key = k:lower()
+      if key == "concepts" or key == "concept" or key == "data-concepts" then
+        for part in v:gmatch("[^%s,;]+") do
+          table.insert(concepts, part)
+        end
+      elseif key == "citekey" or key == "data-citekey" then
+        citekey = v
+      elseif key == "work" or key == "work-key" or key == "data-work-key" then
+        work_key = v
+      elseif key == "locator" or key == "data-locator" then
+        locator = v
+      end
+    end
+  end
+
+  local manifest = get_provenance_manifest()
+  local m_quote = manifest.quotes and manifest.quotes[tostring(q_id)]
+  if m_quote and type(m_quote) == "table" then
+    if m_quote.concepts and type(m_quote.concepts) == "table" then
+      for _, c in ipairs(m_quote.concepts) do
+        table.insert(concepts, c)
+      end
+    end
+    citekey = citekey or m_quote.citekey
+    work_key = work_key or m_quote.workKey
+    locator = locator or m_quote.locator
+  end
+
+  return {
+    id = q_id,
+    concepts = concepts,
+    citekey = citekey,
+    workKey = work_key,
+    locator = locator,
+  }
+end
+
+local function bind_quote_markers_in_blocks(blocks)
+  if not blocks or #blocks == 0 then
+    return blocks
+  end
+  if FORMAT and FORMAT:match("latex") then
+    return blocks
+  end
+
+  local out = {}
+  local pending_quote = nil
+
+  for _, block in ipairs(blocks) do
+    if block.t == "Div" and block.content then
+      block.content = bind_quote_markers_in_blocks(block.content)
+    end
+
+    local marker = parse_quote_marker_raw(block)
+    if marker then
+      pending_quote = marker
+      table.insert(out, block)
+    elseif pending_quote and (block.t == "BlockQuote" or block.t == "Div" or block.t == "Para") then
+      if block.t == "Div" then
+        block.attributes = block.attributes or {}
+        apply_external_concept_attributes(block.attributes, pending_quote.concepts, pending_quote)
+        table.insert(out, block)
+      else
+        local wrapper_attr = pandoc.Attr("", { "iasp-quote" }, {})
+        apply_external_concept_attributes(wrapper_attr.attributes, pending_quote.concepts, pending_quote)
+        if FORMAT and FORMAT:match("html") and not FORMAT:match("epub") then
+          wrapper_attr.attributes["vocab"] = SKOS_VOCAB_URI
+        end
+        table.insert(out, pandoc.Div({ block }, wrapper_attr))
+      end
+      pending_quote = nil
+    else
+      table.insert(out, block)
+    end
+  end
+
+  return out
+end
 
 -- Handle bare tables (not wrapped in .table divs) for auto-compact
 local function handle_table(tbl)
@@ -2003,6 +2269,12 @@ end
 return {
   { Pandoc = preprocess_shorthand },
   { Div = include_expander.expand_include_div },
+  {
+    Pandoc = function(doc)
+      doc.blocks = bind_quote_markers_in_blocks(doc.blocks)
+      return doc
+    end
+  },
   {
     Div = handle_div,
     Header = handle_header,

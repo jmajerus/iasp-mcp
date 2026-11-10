@@ -15,7 +15,7 @@ corpus-project: "chamber-and-system"
 
 ### A Six-Server Authoring MCP Interoperability Demonstration (v{{meta:version}})
 
-<!-- quote 832 -->
+<!-- quote 832 concepts="human-work:curiosity" -->
 ::: {.epigraph}
 I flatter myself that I understand all sorts of curiosity. Curiosity about daily facts, about daily things, about daily men. It is the most respectable faculty of the human mind — in fact I cannot conceive the uses of an incurious mind. It would be like a chamber perpetually locked up.
 
@@ -30,10 +30,10 @@ This essay was assembled in a single authoring session across all six MCP server
 
 In `terminology-mcp`'s `human-work` concept scheme, **curiosity** (`urn:quote-mcp:concept:human-work:curiosity`) is defined as *"a state in which you want to learn more about something."* Yet curiosity is never merely technical acquisition; it begins as a relational posture toward reality. Writing in *Fidelity*, Thich Nhat Hanh frames that impulse as a two-way desire both to understand and to be understood:
 
-<!-- quote 829 -->
+<!-- quote 829 concepts="human-work:curiosity" -->
 > EACH OF US HAS A DEEP DESIRE TO know and understand the world and to be known and understood in return. That is a deep natural thirst. But often this thirst causes us to wait for something outside of ourselves. [@hanh2007fidelity, chap. 4][^hanh-note]
 
-::: {.note .insight}
+::: {.note .insight concepts="human-work:curiosity"}
 When curiosity remains passive—waiting for certainty to arrive from outside—it is easily captured by ready-made narratives that promise immediate closure without the vulnerability of genuine inquiry.
 :::
 
@@ -41,28 +41,28 @@ When curiosity remains passive—waiting for certainty to arrive from outside—
 
 In complex technical and organizational systems, curiosity has to move from a passive thirst to an active discipline. In *Learning Systems Thinking*, Diana Montalion observes that while technical fields naturally attract curious minds, systems leadership requires directing that curiosity toward how wholes interact rather than isolated parts:
 
-<!-- quote 828 -->
+<!-- quote 828 concepts="human-work:curiosity human-work:learning" -->
 > “I am only passionately curious.” This describes many of the people I’ve worked with in tech. We are curious about different things, but generally speaking, the industry attracts curious people. [@montalion2024learning, p. 211][^montalion-note]
 
 ::: {.sidebar .sidebar-block .methodology}
 ## How Six MCP Servers Co-Authored This Section
 
-1. **`terminology-mcp`** resolved `human-work:curiosity` (`t_04e811f7b7ab494a8ae8113b95a2f1ca`) alongside the `iasp` delivery roles and modifiers (`sidebar.methodology`, `note.contrast`, `note.warning`).
+1. **`terminology-mcp`** resolved `human-work:curiosity` (`t_04e811f7b7ab494a8ae8113b95a2f1ca`), `human-work:learning` (`t_9d8bdf1ed9764343aef8fd4bdb1f1221`), and `human-work:confirmation-bias` (`t_60fab99204f4479680df679ef2d94434`) alongside the `iasp` delivery roles and modifiers (`sidebar.methodology`, `note.contrast`, `note.warning`).
 2. **`holdings-mcp`** (`find_work` with `has: ["text", "quotes"]`) joined each work's Zotero item key (`zotero:users/827407/9U7ZWKJ6`), Calibre book ID (`main:223`), and quote store ID (`quote:522`).
-3. **`quote-mcp`** (`search_quotes` and `cite_quote`) supplied the verified quotation text, `<!-- quote <id> -->` provenance markers, and exact section/page locators.
+3. **`quote-mcp`** (`search_quotes`, `get_quote`, and `cite_quote`) supplied the verified quotation text, `<!-- quote <id> -->` provenance markers, and `human-work` concept tags.
 4. **`corpus-mcp`** (`cite_passage`) verified the Calibre text anchors and extracted copyright/publisher metadata.
 5. **`zotero-mcp`** (`zotero_export_bibliography`) exported the canonical BetterBibTeX entries into `demo/references.bib`.
-6. **`iasp-mcp`** (`validate_markdown` and `render_document`) validated the semantic fences and rendered the finished essay.
+6. **`iasp-mcp`** (`validate_markdown` and `render_document`) validated the semantic fences, bound quote/concept provenance from `quote-mcp` and `terminology-mcp`, and rendered the finished essay.
 :::
 
 ## 3. When the Brain Works in Reverse
 
 Why does a faculty that Conrad called *"the most respectable faculty of the human mind"* so often stall inside organizations and public life? In *Suspicious Minds*, Rob Brotherton describes the cognitive mechanism that quietly inverts inquiry from discovery into self-confirmation:
 
-<!-- quote 831 -->
+<!-- quote 831 concepts="human-work:confirmation-bias" -->
 > We like to think our beliefs are founded on a fair survey of the best available evidence; first you find out the facts, then you come to a rational conclusion. But the reality is that our brains often work in reverse. The conclusion comes first, then our brain seeks out and shapes the evidence to fit what it already believes. And it does all this behind the scenes, leaving us with the illusion that we’ve diligently reviewed the evidence and arrived at the only reasonable conclusion. This tendency is called confirmation bias, and it colors our thinking in three distinct ways. [@brotherton2015suspicious, chap. 11][^brotherton-note]
 
-::: {.note .contrast}
+::: {.note .contrast concepts="human-work:curiosity human-work:confirmation-bias"}
 **Open inquiry vs. reverse-engineered certainty:** Where systems thinking (`montalion2024learning`) treats anomalies as invitations to revise our mental model, confirmation bias (`brotherton2015suspicious`) treats anomalies as material to be explained away so the prior conclusion survives intact.
 :::
 

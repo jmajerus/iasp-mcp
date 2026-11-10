@@ -13,6 +13,7 @@ import {
   wrapGhostBlock,
 } from "./ghost.js";
 import { ToolError, findTermRow, parseNotations } from "./queries.js";
+import { parseQuoteMarkerComment, splitConceptList } from "./provenance.js";
 import {
   BUILD_MODIFIER_SPECS,
   DIR_WRAPPER_MAP,
@@ -30,6 +31,7 @@ export interface InspectedBlock {
   delivery_role: string | null;
   modifiers: string[];
   build_modifiers: string[];
+  external_concepts: string[];
   unknown_classes: string[];
   headings: { level: number; text: string; line: number; classes: string[] }[];
   children: InspectedBlock[];
@@ -146,7 +148,7 @@ export function inspectMarkdown(
   const { nodes } = parseMarkdownFences(normalizeFenceLines(bodyLines), 0, bodyStartLine);
 
   const includes: { line: number; target: string; mode: string; exists: boolean }[] = [];
-  const quoteMarkers: { line: number; id: string }[] = [];
+  const quoteMarkers: { line: number; id: string; concepts: string[]; citekey?: string; workKey?: string }[] = [];
   const metaPlaceholders = new Set<string>();
   const topHeadings: { level: number; text: string; line: number; classes: string[] }[] = [];
 
@@ -155,8 +157,16 @@ export function inspectMarkdown(
     for (const m of line.matchAll(/\{\{\s*meta:([\w_.-]+)\s*\}\}/g)) {
       metaPlaceholders.add(m[1]);
     }
-    const qm = /^<!--\s*(?:corpus:)?quote\s+(\S+)\s*-->/.exec(line.trim());
-    if (qm) quoteMarkers.push({ line: bodyStartLine + i, id: qm[1] });
+    const qm = parseQuoteMarkerComment(line);
+    if (qm) {
+      quoteMarkers.push({
+        line: bodyStartLine + i,
+        id: String(qm.id),
+        concepts: qm.concepts,
+        ...(qm.citekey ? { citekey: qm.citekey } : {}),
+        ...(qm.workKey ? { workKey: qm.workKey } : {}),
+      });
+    }
   }
 
   const mapFence = (fence: FenceAstNode): InspectedBlock => {
@@ -183,6 +193,9 @@ export function inspectMarkdown(
       }
     }
 
+    const rawConcepts = fence.attrs.concepts ?? fence.attrs.concept ?? fence.attrs["data-concepts"];
+    const externalConcepts = splitConceptList(rawConcepts).map((c) => c.raw);
+
     return {
       start_line: fence.startLine,
       end_line: fence.endLine,
@@ -193,6 +206,7 @@ export function inspectMarkdown(
       delivery_role: classified.deliveryRole,
       modifiers: classified.modifiers,
       build_modifiers: classified.buildModifiers,
+      external_concepts: externalConcepts,
       unknown_classes: classified.unknownClasses,
       headings,
       children,

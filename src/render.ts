@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } 
 import { basename, dirname, extname, relative, resolve } from "node:path";
 import { PROJECT_ROOT } from "./db.js";
 import { type AiDisclosureMetadata, extractFrontmatter, renderCleanMarkdown, renderGhostMarkdown } from "./ghost.js";
+import { buildProvenanceManifest, type ProvenanceManifest } from "./provenance.js";
 import { ToolError } from "./queries.js";
 
 export const DEMO_ARTICLE_PATH = resolve(PROJECT_ROOT, "demo/essay-on-attentive-reading.md");
@@ -74,6 +75,7 @@ export interface RenderDocumentOptions {
   bibtexContent?: string;
   csl?: string;
   aiMetadata?: AiDisclosureMetadata;
+  provenanceManifest?: ProvenanceManifest;
   optimizePdf?: boolean;
   validateEpub?: boolean;
   returnContent?: boolean;
@@ -92,7 +94,7 @@ export interface RenderedArtifact {
 
 const PANDOC_READER = "markdown+citations+fancy_lists+fenced_divs+header_attributes+link_attributes+smart";
 
-export function renderDocument(options: RenderDocumentOptions = {}) {
+export async function renderDocument(options: RenderDocumentOptions = {}) {
   const rootDir = options.rootDir ?? PROJECT_ROOT;
   const formats: RenderFormat[] = options.formats?.length ? options.formats : ["md", "html", "ghost"];
   const stage = options.stage ?? "final";
@@ -103,6 +105,7 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
   let inputPath: string;
   let tempInputPath: string | null = null;
   let tempBibPath: string | null = null;
+  let tempProvenancePath: string | null = null;
   let rawMarkdown: string;
   let aiMetadata: AiDisclosureMetadata | undefined = options.aiMetadata;
 
@@ -154,6 +157,12 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
   const docTitle = options.title ?? frontmatter.title ?? baseStem;
   const docLang = frontmatter.lang ?? "en";
 
+  const provenanceManifest = options.provenanceManifest ?? (await buildProvenanceManifest(rawMarkdown));
+  if (Object.keys(provenanceManifest.quotes).length > 0 || Object.keys(provenanceManifest.concepts).length > 0) {
+    tempProvenancePath = resolve(outDir, `.tmp-provenance-${process.pid}-${Date.now()}.json`);
+    writeFileSync(tempProvenancePath, JSON.stringify(provenanceManifest), "utf8");
+  }
+
   const toolchain = detectToolchain();
   const artifacts: RenderedArtifact[] = [];
 
@@ -165,6 +174,7 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
           baseDir: dirname(inputPath),
           stage,
           aiMetadata,
+          provenanceManifest,
         });
         const outPath = resolve(outDir, `${baseStem}.md`);
         writeFileSync(outPath, mdContent, "utf8");
@@ -186,6 +196,7 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
           baseDir: dirname(inputPath),
           stage,
           aiMetadata,
+          provenanceManifest,
         });
         const outPath = resolve(outDir, `${baseStem}-ghost.md`);
         writeFileSync(outPath, ghostContent, "utf8");
@@ -229,6 +240,9 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
         "-M",
         `title=${docTitle}`,
       ];
+      if (tempProvenancePath) {
+        args.push("-M", `provenance-manifest=${tempProvenancePath}`);
+      }
 
       if (tempBibPath) {
         args.push("--citeproc", `--bibliography=${tempBibPath}`);
@@ -352,12 +366,14 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
   } finally {
     if (tempInputPath) rmSync(tempInputPath, { force: true });
     if (tempBibPath) rmSync(tempBibPath, { force: true });
+    if (tempProvenancePath) rmSync(tempProvenancePath, { force: true });
   }
 
   return {
     source: options.markdown !== undefined ? "(inline markdown)" : relative(rootDir, inputPath) || inputPath,
     title: docTitle,
     stage,
+    provenance: provenanceManifest,
     artifacts,
   };
 }
