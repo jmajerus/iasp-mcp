@@ -1,0 +1,19 @@
+% sentinel-logging.tex
+% Emits easily searchable markers into the XeLaTeX log so we can see
+% where long builds are spending their time.
+
+\AtBeginDocument{\typeout{SENTINEL:BEGIN DOCUMENT}}
+\AtEndDocument{\typeout{SENTINEL:END DOCUMENT}}
+
+\newcounter{sentinelchapter}
+\newcounter{sentinelsection}
+
+\pretocmd{\chapter}{%
+  \stepcounter{sentinelchapter}%
+  \typeout{SENTINEL:CHAPTER~\arabic{sentinelchapter}}%
+}{}{}
+
+\pretocmd{\section}{%
+  \stepcounter{sentinelsection}%
+  \typeout{SENTINEL:SECTION~\arabic{sentinelsection}}%
+}{}{}

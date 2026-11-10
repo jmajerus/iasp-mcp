@@ -1,0 +1,5 @@
+{
+  "disclosure_variant": "ai",
+  "ai_disclosure": "AI Disclosure: This demonstration essay was co-authored with an AI coding agent using the iasp-mcp server and the iasp concept scheme on terminology-mcp.",
+  "technical_note": "Technical Note: Rendered end to end via the Informative Authoring Semantics Profile (IASP) Pandoc and Ghost pipeline."
+}

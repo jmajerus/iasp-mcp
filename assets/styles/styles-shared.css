@@ -1,0 +1,543 @@
+/* ==========================================================================
+   Shared EPUB semantics styling
+   - Applied before environment-specific overrides (e.g., styles-epub.css)
+   - Keeps structural elements consistent across build pipelines
+   ========================================================================== */
+
+@namespace epub "http://www.idpf.org/2007/ops";
+
+/* Parts (Series divisions) */
+[epub|type~="part"] {
+  text-align: center;
+  margin-top: 2.5em;
+  margin-bottom: 2em;
+}
+
+[epub|type~="part"] h1,
+[epub|type~="part"] h2 {
+  margin-top: 0;
+  margin-bottom: 0.4em;
+  font-size: 1.6em;
+}
+
+[epub|type~="part"] h3 {
+  font-size: 1.1em;
+  font-weight: normal;
+  color: #555;
+  margin-top: 0.2em;
+}
+
+/* Chapters and subchapters */
+h1[epub|type~="chapter"],
+h2[epub|type~="chapter"] {
+  font-size: 1.4em;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  text-align: left;
+}
+
+h2[epub|type~="subchapter"],
+h3[epub|type~="subchapter"] {
+  font-size: 1.2em;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+}
+
+/* Epigraphs (block + inline variants) */
+[epub|type~="epigraph"] {
+  margin: 1.8em 10%;
+  font-style: italic;
+  text-align: right;
+}
+
+[epub|type~="epigraph"] p {
+  margin-bottom: 0.6em;
+}
+
+[epub|type~="epigraph"] .attribution {
+  font-style: normal;
+  font-size: 0.9em;
+  color: #555;
+}
+
+[epub|type~="epigraph-inline"] {
+  margin: 1.2em 12%;
+  font-style: italic;
+  text-align: right;
+  opacity: 0.9;
+}
+
+[epub|type~="epigraph-inline"] p {
+  margin-bottom: 0.4em;
+}
+
+/* Asides and callouts */
+[epub|type~="aside"] {
+  border: 1.5px solid rgba(0, 0, 0, 0.14);
+  border-left-width: 4px;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.022);
+  padding: 1.1em 1.2em;
+  margin: 1.2em 0;
+  font-size: 0.95em;
+  line-height: 1.45;
+  page-break-before: auto !important;
+  break-before: auto !important;
+  page-break-after: auto !important;
+  break-after: auto !important;
+  page-break-inside: auto;
+  break-inside: auto;
+  position: relative;
+}
+
+[epub|type~="aside"]::after {
+  content: "";
+  position: absolute;
+  inset: 0.5em;
+  border: 1px dashed rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+[epub|type~="aside"] + [epub|type~="aside"] {
+  margin-top: 1.8em;
+}
+[epub|type~="aside"] h3 {
+  margin-top: 0;
+  margin-bottom: 0.3em;
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+[epub|type~="aside"] .sidebar-badge,
+[epub|type~="sidebar-inline"] .sidebar-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.18em 0.65em 0.12em 0.55em;
+  background-color: rgba(0, 0, 0, 0.065);
+  color: #333;
+  margin: 0 0 0.45em 0;
+}
+
+/* Generic boxed-element badge used when authors add the `.badge` class */
+.box-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.72em;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.18em 0.65em 0.12em 0.55em;
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #333;
+  margin: 0 0 0.45em 0;
+}
+
+.box-badge__label {
+  font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+.sidebar-badge__glyph {
+  font-size: 1em;
+}
+
+.sidebar-badge__label {
+  font-family: "Source Sans Pro", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0.08em;
+}
+
+[epub|type~="sidebar-inline"] .sidebar-inline-glyph {
+  font-size: 0.95em;
+  margin-right: 0.35em;
+  display: inline-block;
+}
+
+[epub|type~="sidebar-inline"] .sidebar-inline-glyph--block {
+  display: inline-flex;
+  margin-right: 0;
+  margin-bottom: 0.35em;
+}
+
+[epub|type~="sidebar-inline"] {
+  border-left: 3px solid #b3b3b3;
+  background-color: rgba(0, 0, 0, 0.012);
+  padding: 0.45em 0.9em;
+  margin: 0.8em 0;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+[epub|type~="callout"] {
+  border-left: 2px solid #bbb;
+  background-color: rgba(0, 0, 0, 0.02);
+  padding: 0.6em 0.9em;
+  margin: 1em 0;
+  font-size: 0.95em;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* Shared note variables so subclasses can override palette without rewriting layout. */
+[epub|type~="note"] {
+  --note-border-color: #e6c35a;
+  --note-background-color: #fff9ed;
+  --note-marker-color: #8a5a00;
+  --note-marker-bg: rgba(230, 195, 90, 0.18);
+  border-left: 3px solid var(--note-border-color, #e6c35a);
+  background-color: var(--note-background-color, #fff9ed);
+  padding: 0.55em 1em 0.85em;
+  margin: 1.1em 0;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+/* Trim excess space ahead of note titles */
+[epub|type~="note"] > :first-child {
+  margin-top: 0;
+}
+
+[epub|type~="note"] > h2:first-child,
+[epub|type~="note"] > h3:first-child,
+[epub|type~="note"] > h4:first-child,
+[epub|type~="note"] > h5:first-child,
+[epub|type~="note"] > h6:first-child {
+  margin-top: 0.15em;
+}
+
+[epub|type~="note"].warning {
+  --note-border-color: #c05621;
+  --note-background-color: #fff1e6;
+  --note-marker-color: #8c2f00;
+  --note-marker-bg: rgba(192, 86, 33, 0.18);
+}
+
+[epub|type~="note"].contrast {
+  --note-border-color: #7e3af2;
+  --note-background-color: #f4ebff;
+  --note-marker-color: #4c1d95;
+  --note-marker-bg: rgba(126, 58, 242, 0.16);
+}
+
+[epub|type~="note"].transition {
+  --note-border-color: #2563eb;
+  --note-background-color: #eaf2ff;
+  --note-marker-color: #1e3a8a;
+  --note-marker-bg: rgba(37, 99, 235, 0.16);
+}
+
+[epub|type~="note"].navigation {
+  --note-border-color: #0f6b75;
+  --note-background-color: #e6f6f7;
+  --note-marker-color: #084a52;
+  --note-marker-bg: rgba(15, 107, 117, 0.16);
+}
+
+[epub|type~="note"].bridge {
+  --note-border-color: #6f58b9;
+  --note-background-color: #f4f0ff;
+  --note-marker-color: #4a3792;
+  --note-marker-bg: rgba(111, 88, 185, 0.17);
+}
+
+[epub|type~="note"].usage {
+  --note-border-color: #3b6ea8;
+  --note-background-color: #eef4fa;
+  --note-marker-color: #1f3f66;
+  --note-marker-bg: rgba(59, 110, 168, 0.16);
+}
+
+[epub|type~="note"].integration {
+  --note-border-color: #0f766e;
+  --note-background-color: #e8f7f6;
+  --note-marker-color: #0b4f4a;
+  --note-marker-bg: rgba(15, 118, 110, 0.16);
+}
+
+[epub|type~="note"].responsibility {
+  --note-border-color: #b45309;
+  --note-background-color: #fff4e6;
+  --note-marker-color: #7c2d12;
+  --note-marker-bg: rgba(180, 83, 9, 0.16);
+}
+
+[epub|type~="note"].reflexive {
+  --note-border-color: #64748b;
+  --note-background-color: #eff2f7;
+  --note-marker-color: #334155;
+  --note-marker-bg: rgba(100, 116, 139, 0.16);
+}
+
+[epub|type~="note"].synthesis {
+  --note-border-color: #2f855a;
+  --note-background-color: #e7f7ef;
+  --note-marker-color: #1b5e3c;
+  --note-marker-bg: rgba(47, 133, 90, 0.16);
+}
+
+[epub|type~="note"].disclosure {
+  --note-border-color: #a855f7;
+  --note-background-color: #f5edff;
+  --note-marker-color: #6b21a8;
+  --note-marker-bg: rgba(168, 85, 247, 0.16);
+}
+
+[epub|type~="note"].misuse {
+  --note-border-color: #b42318;
+  --note-background-color: #ffecea;
+  --note-marker-color: #7a120c;
+  --note-marker-bg: rgba(180, 35, 24, 0.18);
+}
+
+[epub|type~="note"].diagnostic {
+  --note-border-color: #2454c6;
+  --note-background-color: #e7f0ff;
+  --note-marker-color: #17337a;
+  --note-marker-bg: rgba(36, 84, 198, 0.18);
+}
+
+[epub|type~="note"].closing {
+  --note-border-color: #475467;
+  --note-background-color: #f5f7fb;
+  --note-marker-color: #2f3949;
+  --note-marker-bg: rgba(71, 84, 103, 0.16);
+}
+
+[epub|type~="note"].methodology {
+  --note-border-color: #5046e5;
+  --note-background-color: #eef0ff;
+  --note-marker-color: #312e81;
+  --note-marker-bg: rgba(80, 70, 229, 0.16);
+}
+
+[epub|type~="note"].context {
+  --note-border-color: #4a5568;
+  --note-background-color: #f0f4f8;
+  --note-marker-color: #2d3748;
+  --note-marker-bg: rgba(74, 85, 104, 0.16);
+}
+
+[epub|type~="note"].scope {
+  --note-border-color: #92400e;
+  --note-background-color: #fef3e2;
+  --note-marker-color: #78350f;
+  --note-marker-bg: rgba(146, 64, 14, 0.16);
+}
+
+[epub|type~="note"].checklist {
+  --note-border-color: #0d9488;
+  --note-background-color: #ccfbf1;
+  --note-marker-color: #115e59;
+  --note-marker-bg: rgba(13, 148, 136, 0.16);
+}
+
+[epub|type~="note"].prelude {
+  --note-border-color: #9ca3af;
+  --note-background-color: #f9fafb;
+  --note-marker-color: #4b5563;
+  --note-marker-bg: rgba(156, 163, 175, 0.16);
+}
+
+[epub|type~="note"].orientation {
+  --note-border-color: #0f6b75;
+  --note-background-color: #e6f6f7;
+  --note-marker-color: #084a52;
+  --note-marker-bg: rgba(15, 107, 117, 0.16);
+}
+
+[epub|type~="note"].ai {
+  --note-border-color: #2563eb;
+  --note-background-color: #eef6ff;
+  --note-marker-color: #1d4ed8;
+  --note-marker-bg: rgba(37, 99, 235, 0.16);
+}
+
+[epub|type~="note"].idea,
+[epub|type~="note"].insight {
+  --note-border-color: #d9a300;
+  --note-background-color: #fff6d1;
+}
+
+[epub|type~="note"].breadcrumb {
+  --note-border-color: #1d5671;
+  --note-background-color: #eef5fb;
+  --note-marker-color: #153a4a;
+  --note-marker-bg: rgba(29, 86, 113, 0.16);
+}
+
+[epub|type~="example"] {
+  border-left: 3px solid #2f80ed;
+  background-color: #e8f1ff;
+  padding: 0.75em 1em;
+  margin: 1.1em 0;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+[epub|type~="definition"] {
+  border-left: 3px solid #1b7f4d;
+  background-color: #e6f7ef;
+  padding: 0.75em 1em;
+  margin: 1.1em 0;
+  font-size: 0.95em;
+  line-height: 1.4;
+  font-weight: 500;
+}
+
+/* Frontmatter / Backmatter */
+[epub|type~="frontmatter"] h1,
+[epub|type~="frontmatter"] h2 {
+  text-align: center;
+}
+
+[epub|type~="backmatter"] h1,
+[epub|type~="backmatter"] h2 {
+  text-align: left;
+}
+
+/* Appendices */
+h1[epub|type~="appendix"],
+h2[epub|type~="appendix"] {
+  font-size: 1.3em;
+  margin-top: 2em;
+  margin-bottom: 0.6em;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Legacy epigraph class blocks */
+.epigraph {
+  margin: 2em 1em;
+  padding-left: 1.5em;
+  font-style: italic;
+  font-size: 0.95em;
+  border-left: 3px solid #999;
+}
+
+.epigraph p {
+  margin: 0.6em 0;
+}
+
+/* Shared media defaults */
+img {
+  display: block;
+  margin: 1em auto;
+  max-width: 100%;
+  height: auto;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 1.5em 0;
+}
+
+hr.catalog-divider {
+  border: none;
+  border-top: 1px solid #999;
+  margin: 1.5em 0;
+  width: 100%;
+}
+
+/* Tables */
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+
+.table th,
+.table td {
+  padding: 0.52em 0.68em;
+  vertical-align: top;
+}
+
+.table-compact table {
+  font-size: 0.88em;
+}
+
+.table-compact th,
+.table-compact td {
+  padding: 0.3em 0.45em;
+}
+
+.table-striped table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.table-bordered table,
+.table-bordered th,
+.table-bordered td {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.table-bordered table {
+  border-collapse: collapse;
+}
+
+/* Blockquotes (shared Typora-style appearance) */
+blockquote {
+  margin: 1.2em 0;
+  padding: 0.85em 1.2em;
+  border-left: 4px solid #d0d7de;
+  background-color: rgba(0, 0, 0, 0.03);
+  color: #222;
+}
+
+[epub|type~="aside"] blockquote,
+[epub|type~="sidebar-inline"] blockquote {
+  border-left-color: rgba(0, 0, 0, 0.18);
+  background-color: rgba(0, 0, 0, 0.045);
+}
+
+blockquote > :first-child {
+  margin-top: 0;
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* Footnotes: make references obvious and stabilize endnote blocks */
+.footnote-ref {
+  font-size: 0.8em;
+  vertical-align: super;
+  text-decoration: none;
+  margin-left: 0.1em;
+}
+
+.footnotes,
+.doc-endnotes {
+  border-top: 1px solid #d0d7de;
+  margin-top: 1.8em;
+  padding-top: 1em;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.footnotes ol,
+.doc-endnotes ol {
+  margin: 0.6em 0 0 1.4em;
+  padding: 0;
+}
+
+.footnotes li,
+.doc-endnotes li {
+  margin-bottom: 0.7em;
+}
+
+.footnote-back {
+  font-size: 0.75em;
+  margin-right: 0.35em;
+  text-decoration: none;
+}

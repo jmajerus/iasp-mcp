@@ -1,0 +1,76 @@
+% Sidebar (epub:type="aside")
+\newmdenv[
+  skipabove=1.2\baselineskip,
+  skipbelow=1.2\baselineskip,
+  linewidth=1pt,
+  linecolor=gray!54,
+  roundcorner=6pt,
+  backgroundcolor=sidebarbg,
+  innertopmargin=0.9em,
+  innerbottommargin=0.9em,
+  innerleftmargin=1em,
+  innerrightmargin=1em,
+]{sidebar}
+
+\newenvironment{sidebarblock}{%
+  \needspace{6\baselineskip}% ensure the box does not immediately break
+  \begin{sidebar}%
+}{%
+  \end{sidebar}%
+}
+
+\AtBeginEnvironment{sidebar}{%
+  \needspace{8\baselineskip}% avoid stranded headers
+  \par
+  \penalty500
+  \colorlet{blockquote-border}{blockquote-border-sidebar}% darken nested blockquotes
+}
+
+\AtEndEnvironment{sidebar}{%
+  \par
+  \penalty500
+  \colorlet{blockquote-border}{blockquote-border-default}% restore default blockquote accent
+}
+
+% Sidebar glyph + badges (🗒)
+\newcommand{\glyphsidebar}{{\noteglyphfont 🗒}}
+\newcommand{\sidebarheadingglyph}{%
+  \raisebox{0.05em}{\glyphsidebar}\hspace{0.45em}%
+}
+
+\newcommand{\sidebarinlineglyph}{%
+  \sidebarheadingglyph
+}
+
+\newcommand{\sidebarinlineglyphline}{%
+  \par\noindent
+  \raisebox{0.05em}{\glyphsidebar}\par\vspace{0.35\baselineskip}%
+}
+
+\newcommand{\sidebarbadge}{%
+  \begingroup
+  \par\nointerlineskip
+  \noindent
+  \expandafter\colorbox\expandafter{\sidebarbadgebg}{%
+    \rule{0pt}{0.80\baselineskip}% tighter line height, similar to note badges
+    \hspace{0.4em}\raisebox{0.1ex}{\glyphsidebar}\hspace{0.3em}%
+    {\sffamily\footnotesize SIDEBAR}\hspace{0.6em}%
+  }%
+  \par\nointerlineskip
+  \endgroup
+}
+
+% Generic box badge fallback (used by Lua when a generic .badge is requested)
+% This macro will be overridden by specialized box includes if needed.
+\newcommand{\boxbadge}[1]{%
+  \begingroup
+  \par\nointerlineskip
+  \vspace{-0.25em}%
+  \noindent
+  \expandafter\colorbox\expandafter{\boxbadgebg}{%
+    \rule{0pt}{0.9\baselineskip}%
+    \hspace{0.35em}\sffamily\footnotesize #1\hspace{0.35em}%
+  }%
+  \par\nointerlineskip
+  \endgroup
+}

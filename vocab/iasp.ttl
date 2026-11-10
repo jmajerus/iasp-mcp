@@ -1,0 +1,540 @@
+# IASP — Informative Authoring Semantics Profile, as a SKOS concept scheme.
+#
+# Source of truth for the terms: iasp_tooling/docs/Semantic Vocabulary.md (IASP Core)
+# and the note variants in iasp_tooling/lua/iasp-semantics.lua (NOTE_VARIANT_CONFIG).
+#
+# Import into terminology-mcp with "Import SKOS…" (Turtle file), scheme ID `iasp`,
+# structure Auto (the file declares `tree`). The `term:` predicates are
+# terminology-mcp application extensions; plain SKOS consumers can ignore them.
+#
+# Modelling notes
+# - The two IASP axes are the top concepts: "delivery role" (Axis A) and "modifier"
+#   (Axis B). Modifiers are grouped by the headings of Semantic Vocabulary §7, plus a
+#   "reader navigation" group for build-supported note variants that fit none of them.
+# - broader/narrower here classifies terms *within an axis*. It does not model
+#   composition: `note.insight` is a note functioning as an insight, not a subtype.
+# - Each term's skos:notation is the Pandoc class token authors write
+#   (datatype <urn:iasp:datatype:pandoc-class>).
+# - Provenance (Core vs. build extension) is carried by the collections, not the tree.
+# - External mappings are skos:closeMatch only: IASP names intent, while EPUB / DPUB-ARIA
+#   name structure, so none of them is an exact match.
+
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix term: <urn:terminology-mcp:vocab:> .
+@prefix iasp: <urn:iasp:concept:> .
+@prefix set:  <urn:iasp:set:> .
+@prefix cls:  <urn:iasp:datatype:> .
+@prefix ssv:  <http://idpf.org/epub/vocab/structure/#> .
+@prefix dpub: <https://www.w3.org/TR/dpub-aria-1.1/#> .
+@prefix aria: <https://www.w3.org/TR/wai-aria-1.2/#> .
+
+# ---------------------------------------------------------------------------
+# Scheme
+# ---------------------------------------------------------------------------
+
+<urn:iasp:scheme:iasp> a skos:ConceptScheme ;
+    skos:prefLabel "Informative Authoring Semantics Profile" ;
+    dct:description "IASP: names for what a passage of long-form nonfiction is doing — its delivery role relative to the main flow (Axis A) and the rhetorical, expository or stance-signalling work it does (Axis B). Terms compose as delivery.modifier (e.g. note.insight, sidebar.example). Informative, not normative: nothing is required and untagged text is valid." ;
+    skos:hasTopConcept iasp:delivery-role, iasp:modifier ;
+    term:hierarchy "tree" ;
+    term:slugScope "scheme" ;
+    term:proposalSource "optional" .
+
+# ---------------------------------------------------------------------------
+# Axis A — Delivery roles
+# ---------------------------------------------------------------------------
+
+iasp:delivery-role a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ;
+    skos:topConceptOf <urn:iasp:scheme:iasp> ;
+    skos:prefLabel "delivery role" ;
+    skos:altLabel "Axis A" ;
+    skos:scopeNote "How a passage relates to the surrounding narrative flow: its placement and relationship to the main text. The leftmost term in a composition (delivery.modifier). Unmarked text is assumed to be main flow; one delivery role per passage is usually enough." ;
+    term:slug "delivery-role" ; term:status "active" .
+
+iasp:front-matter a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "front-matter" ; skos:altLabel "frontmatter" ;
+    skos:notation "front-matter"^^cls:pandoc-class, "frontmatter"^^cls:pandoc-class ;
+    skos:scopeNote "Material framing the work (preface, introduction, etc.)." ;
+    skos:closeMatch ssv:frontmatter ;
+    term:slug "front-matter" ; term:status "active" .
+
+iasp:series a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "series" ;
+    skos:notation "series"^^cls:pandoc-class ;
+    skos:scopeNote "Optional super-division above parts; use only if helpful. Naming is configurable (see Part Naming)." ;
+    term:slug "series" ; term:status "active" .
+
+iasp:part a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "part" ;
+    skos:notation "part"^^cls:pandoc-class ;
+    skos:scopeNote "Major thematic division." ;
+    skos:closeMatch ssv:part, dpub:doc-part ;
+    term:slug "part" ; term:status "active" .
+
+iasp:chapter a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "chapter" ;
+    skos:notation "chapter"^^cls:pandoc-class ;
+    skos:scopeNote "Primary unit of argument." ;
+    skos:closeMatch ssv:chapter, dpub:doc-chapter ;
+    term:slug "chapter" ; term:status "active" .
+
+iasp:section a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "section" ;
+    skos:notation "section"^^cls:pandoc-class ;
+    skos:scopeNote "Subdivision within a chapter." ;
+    term:slug "section" ; term:status "active" .
+
+iasp:interlude a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "interlude" ;
+    skos:notation "interlude"^^cls:pandoc-class ;
+    skos:scopeNote "Intentional pause or tonal shift." ;
+    skos:related iasp:bridge ;
+    term:slug "interlude" ; term:status "active" .
+
+iasp:bridge a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "bridge" ; skos:altLabel "bridgehead" ;
+    skos:notation "bridge"^^cls:pandoc-class ;
+    skos:scopeNote "Transitional connective text. Also used as a note variant (note.bridge, lavender badge) to stitch concepts together inside a chapter or appendix. In builds a bridge maps to ARIA role complementary and accepts .pre-pagebreak / .post-pagebreak." ;
+    skos:related iasp:transition ;
+    term:slug "bridge" ; term:status "active" .
+
+iasp:sidebar a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "sidebar" ; skos:altLabel "aside", "sidebar-block" ;
+    skos:notation "sidebar"^^cls:pandoc-class, "aside"^^cls:pandoc-class ;
+    skos:scopeNote "Optional digression or parallel track. Common compositions: sidebar.example, sidebar.background. Builds map it to epub:type aside and ARIA role complementary; .sidebar-block gives the full-width badge form." ;
+    skos:closeMatch aria:complementary ;
+    term:slug "sidebar" ; term:status "active" .
+
+iasp:sidebar-inline a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:sidebar ;
+    skos:prefLabel "sidebar-inline" ; skos:altLabel "inline sidebar" ;
+    skos:notation "sidebar-inline"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension. A sidebar that sits inside the prose, with a glyph on its first line rather than a badge header." ;
+    term:slug "sidebar-inline" ; term:status "active" .
+
+iasp:callout a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "callout" ; skos:altLabel "margin note" ;
+    skos:notation "callout"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension. A short aside lifted out of the flow with a light border-left treatment." ;
+    skos:related iasp:note, iasp:sidebar ;
+    term:slug "callout" ; term:status "active" .
+
+iasp:note a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "note" ;
+    skos:notation "note"^^cls:pandoc-class ;
+    skos:scopeNote "Ancillary content tied to a point, but not necessarily a formal footnote. The most-composed role: the build recognises a fixed set of note variants (see the 'Note variants' collection), each with its own box style, written note.<variant>." ;
+    term:slug "note" ; term:status "active" .
+
+iasp:footnote a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "footnote" ;
+    skos:notation "footnote"^^cls:pandoc-class ;
+    skos:scopeNote "Localized ancillary content. Example composition: footnote.counterpoint." ;
+    skos:closeMatch ssv:footnote, dpub:doc-footnote ;
+    skos:related iasp:endnotes ;
+    term:slug "footnote" ; term:status "active" .
+
+iasp:endnotes a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "endnotes" ; skos:altLabel "footnotes" ;
+    skos:notation "endnotes"^^cls:pandoc-class, "footnotes"^^cls:pandoc-class ;
+    skos:scopeNote "Deferred ancillary content. The build's 'footnotes' class maps to doc-endnotes." ;
+    skos:closeMatch ssv:endnotes, dpub:doc-endnotes ;
+    term:slug "endnotes" ; term:status "active" .
+
+iasp:epigraph a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "epigraph" ;
+    skos:notation "epigraph"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension. A quotation set at the head of a part, chapter or section." ;
+    skos:closeMatch ssv:epigraph, dpub:doc-epigraph ;
+    term:slug "epigraph" ; term:status "active" .
+
+iasp:epigraph-inline a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:epigraph ;
+    skos:prefLabel "epigraph-inline" ; skos:altLabel "inline epigraph" ;
+    skos:notation "epigraph-inline"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension. An epigraph set within the running text rather than as a heading block." ;
+    term:slug "epigraph-inline" ; term:status "active" .
+
+iasp:appendix a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "appendix" ;
+    skos:notation "appendix"^^cls:pandoc-class ;
+    skos:scopeNote "Material outside the main narrative flow." ;
+    skos:closeMatch ssv:appendix, dpub:doc-appendix ;
+    term:slug "appendix" ; term:status "active" .
+
+iasp:back-matter a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:delivery-role ;
+    skos:prefLabel "back-matter" ; skos:altLabel "backmatter" ;
+    skos:notation "backmatter"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension. Material closing the work after the main narrative (bibliography, index, colophon, etc.); counterpart to front-matter." ;
+    skos:closeMatch ssv:backmatter ;
+    term:slug "back-matter" ; term:status "active" .
+
+# ---------------------------------------------------------------------------
+# Axis B — Modifiers
+# ---------------------------------------------------------------------------
+
+iasp:modifier a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ;
+    skos:topConceptOf <urn:iasp:scheme:iasp> ;
+    skos:prefLabel "modifier" ;
+    skos:altLabel "Axis B" ;
+    skos:scopeNote "What kind of work a passage is doing and what stance it signals: rhetorical function, reader guidance or epistemic stance. Qualifies a delivery role in a composition (delivery.modifier); one or two modifiers are usually enough." ;
+    term:slug "modifier" ; term:status "active" .
+
+# --- 7.1 Argument and reasoning --------------------------------------------
+
+iasp:argument-and-reasoning a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:modifier ;
+    skos:prefLabel "argument and reasoning" ;
+    skos:scopeNote "Modifiers naming a move in the argument." ;
+    term:slug "argument-and-reasoning" ; term:status "active" .
+
+iasp:thesis a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "thesis" ; skos:notation "thesis"^^cls:pandoc-class ;
+    skos:scopeNote "Central claim. Example: section.thesis, to mark a major move." ;
+    skos:related iasp:claim ;
+    term:slug "thesis" ; term:status "active" .
+
+iasp:claim a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "claim" ; skos:notation "claim"^^cls:pandoc-class ;
+    skos:scopeNote "Supporting assertion." ;
+    term:slug "claim" ; term:status "active" .
+
+iasp:counterpoint a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "counterpoint" ; skos:notation "counterpoint"^^cls:pandoc-class ;
+    skos:scopeNote "Alternative or opposing view." ;
+    skos:related iasp:contrast ;
+    term:slug "counterpoint" ; term:status "active" .
+
+iasp:qualification a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "qualification" ; skos:notation "qualification"^^cls:pandoc-class ;
+    skos:scopeNote "Limitation or nuance." ;
+    skos:related iasp:limitation ;
+    term:slug "qualification" ; term:status "active" .
+
+iasp:implication a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "implication" ; skos:notation "implication"^^cls:pandoc-class ;
+    skos:scopeNote "Consequence of an argument." ;
+    term:slug "implication" ; term:status "active" .
+
+iasp:synthesis a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "synthesis" ; skos:notation "synthesis"^^cls:pandoc-class ;
+    skos:scopeNote "Integration of ideas. As a note variant (note.synthesis, green ⊕ badge): a block that integrates multiple strands into a single takeaway." ;
+    skos:related iasp:integration ;
+    term:slug "synthesis" ; term:status "active" .
+
+iasp:integration a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "integration" ; skos:notation "integration"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.integration, teal ∞ badge). Guidance on integrating or synthesising across frameworks." ;
+    term:slug "integration" ; term:status "active" .
+
+iasp:contrast a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "contrast" ; skos:altLabel "compare/contrast" ;
+    skos:notation "contrast"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.contrast, inline ⇆ glyph). A short compare/contrast clarification between frameworks." ;
+    term:slug "contrast" ; term:status "active" .
+
+iasp:reflection a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "reflection" ; skos:notation "reflection"^^cls:pandoc-class ;
+    skos:scopeNote "Interpretive or contemplative pause. Example: bridge.reflection." ;
+    skos:related iasp:reflexive, iasp:interlude ;
+    term:slug "reflection" ; term:status "active" .
+
+iasp:provocation a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:argument-and-reasoning ;
+    skos:prefLabel "provocation" ; skos:notation "provocation"^^cls:pandoc-class ;
+    skos:scopeNote "Intentionally unsettling prompt." ;
+    term:slug "provocation" ; term:status "active" .
+
+# --- 7.2 Exposition and support --------------------------------------------
+
+iasp:exposition-and-support a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:modifier ;
+    skos:prefLabel "exposition and support" ;
+    skos:scopeNote "Modifiers naming material that explains, illustrates or grounds the argument." ;
+    term:slug "exposition-and-support" ; term:status "active" .
+
+iasp:example a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "example" ; skos:notation "example"^^cls:pandoc-class ;
+    skos:scopeNote "Concrete illustration. Also usable alone as a block (::: example, blue accent frame). Example composition: sidebar.example." ;
+    skos:closeMatch dpub:doc-example ;
+    skos:related iasp:case-study, iasp:analogy ;
+    term:slug "example" ; term:status "active" .
+
+iasp:case-study a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "case-study" ; skos:altLabel "case study" ;
+    skos:notation "case-study"^^cls:pandoc-class ;
+    skos:scopeNote "Extended real-world instance." ;
+    term:slug "case-study" ; term:status "active" .
+
+iasp:background a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "background" ; skos:notation "background"^^cls:pandoc-class ;
+    skos:scopeNote "Contextual grounding. Example composition: sidebar.background." ;
+    skos:related iasp:context ;
+    term:slug "background" ; term:status "active" .
+
+iasp:context a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "context" ; skos:notation "context"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.context, warm slate ◉ badge). Contextual framing that sets the scene or establishes background." ;
+    term:slug "context" ; term:status "active" .
+
+iasp:definition a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "definition" ; skos:notation "definition"^^cls:pandoc-class ;
+    skos:scopeNote "Clarification of a term. Also usable alone as a block (::: definition, green glossary frame). Example composition: note.definition." ;
+    skos:related iasp:gloss ;
+    term:slug "definition" ; term:status "active" .
+
+iasp:gloss a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "gloss" ; skos:notation "gloss"^^cls:pandoc-class ;
+    skos:scopeNote "Brief explanatory note." ;
+    term:slug "gloss" ; term:status "active" .
+
+iasp:analogy a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "analogy" ; skos:notation "analogy"^^cls:pandoc-class ;
+    skos:scopeNote "Comparative explanation." ;
+    term:slug "analogy" ; term:status "active" .
+
+iasp:insight a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "insight" ; skos:notation "insight"^^cls:pandoc-class ;
+    skos:scopeNote "Moment of realization or reframing. As a note variant (note.insight) it renders with an asterism row." ;
+    skos:related iasp:idea ;
+    term:slug "insight" ; term:status "active" .
+
+iasp:insight-major a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:insight ;
+    skos:prefLabel "major insight" ; skos:altLabel "insight.major" ;
+    skos:notation "insight.major"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.insight.major, badge strip). An insight given more weight than the asterism form." ;
+    term:slug "insight-major" ; term:status "active" .
+
+iasp:idea a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "idea" ; skos:notation "idea"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.idea, inline 💡 glyph). A suggestion or generative thought offered in passing." ;
+    term:slug "idea" ; term:status "active" .
+
+iasp:usage a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "usage" ; skos:altLabel "how to apply this" ;
+    skos:notation "usage"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.usage, steel-blue ⚙ badge). Guidance on how to apply a framework or idea." ;
+    term:slug "usage" ; term:status "active" .
+
+iasp:methodology a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "methodology" ; skos:notation "methodology"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.methodology, indigo ⊢ badge). Explains how the analysis is conducted." ;
+    term:slug "methodology" ; term:status "active" .
+
+iasp:diagnostic a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "diagnostic" ; skos:altLabel "diagnostic note" ;
+    skos:notation "diagnostic"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.diagnostic, blue 🔍 badge). Pattern-recognition checklists and diagnostic callouts." ;
+    skos:related iasp:checklist ;
+    term:slug "diagnostic" ; term:status "active" .
+
+iasp:checklist a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:exposition-and-support ;
+    skos:prefLabel "checklist" ; skos:notation "checklist"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.checklist, teal ☐ badge). Indicative checklists, verification criteria or structured evidence markers." ;
+    term:slug "checklist" ; term:status "active" .
+
+# --- 7.3 Reader signals and stance -----------------------------------------
+
+iasp:reader-signals-and-stance a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:modifier ;
+    skos:prefLabel "reader signals and stance" ;
+    skos:scopeNote "Modifiers that alert the reader or declare the author's epistemic or moral stance." ;
+    term:slug "reader-signals-and-stance" ; term:status "active" .
+
+iasp:warning a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "warning" ; skos:notation "warning"^^cls:pandoc-class ;
+    skos:scopeNote "Risk, harm or moral alert. As a note variant (note.warning) it renders with a warning badge." ;
+    skos:related iasp:caution, iasp:misuse ;
+    term:slug "warning" ; term:status "active" .
+
+iasp:notice a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "notice" ; skos:notation "notice"^^cls:pandoc-class ;
+    skos:scopeNote "Important framing information." ;
+    skos:closeMatch ssv:notice, dpub:doc-notice ;
+    term:slug "notice" ; term:status "active" .
+
+iasp:caution a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "caution" ; skos:notation "caution"^^cls:pandoc-class ;
+    skos:scopeNote "Advice against overreach." ;
+    skos:related iasp:misuse ;
+    term:slug "caution" ; term:status "active" .
+
+iasp:misuse a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "misuse" ; skos:altLabel "don't weaponize this" ;
+    skos:notation "misuse"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.misuse, red ✕ badge). Flags common misreadings or warns against weaponizing a framework." ;
+    term:slug "misuse" ; term:status "active" .
+
+iasp:assumption a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "assumption" ; skos:notation "assumption"^^cls:pandoc-class ;
+    skos:scopeNote "Declared premise." ;
+    skos:related iasp:disclosure ;
+    term:slug "assumption" ; term:status "active" .
+
+iasp:limitation a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "limitation" ; skos:notation "limitation"^^cls:pandoc-class ;
+    skos:scopeNote "Known constraint." ;
+    skos:related iasp:scope, iasp:disclosure ;
+    term:slug "limitation" ; term:status "active" .
+
+iasp:scope a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "scope" ; skos:altLabel "scope note" ;
+    skos:notation "scope"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.scope, warm copper ◎ badge). Delimits boundaries, applicability or evidentiary thresholds." ;
+    term:slug "scope" ; term:status "active" .
+
+iasp:uncertainty a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "uncertainty" ; skos:notation "uncertainty"^^cls:pandoc-class ;
+    skos:scopeNote "Epistemic humility." ;
+    term:slug "uncertainty" ; term:status "active" .
+
+iasp:disclosure a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "disclosure" ; skos:altLabel "transparency note" ;
+    skos:notation "disclosure"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.disclosure, violet ◊ badge). Transparency notes: assumptions, limits, or what is being disclosed." ;
+    term:slug "disclosure" ; term:status "active" .
+
+iasp:responsibility a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "responsibility" ; skos:altLabel "accountability" ;
+    skos:notation "responsibility"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.responsibility, amber ⚖ badge). Responsibility or accountability framing." ;
+    term:slug "responsibility" ; term:status "active" .
+
+iasp:reflexive a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-signals-and-stance ;
+    skos:prefLabel "reflexive" ; skos:altLabel "self-scrutiny" ;
+    skos:notation "reflexive"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.reflexive, slate ⟲ badge). Reflexive cautions: the author or reader turning the analysis on themselves." ;
+    term:slug "reflexive" ; term:status "active" .
+
+# --- Reader navigation (build extensions) ----------------------------------
+
+iasp:reader-navigation a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:modifier ;
+    skos:prefLabel "reader navigation" ;
+    skos:scopeNote "Modifiers that orient the reader within the book: where they are, where they came from, where they are going. Not a heading in IASP Core; groups build-supported note variants." ;
+    term:slug "reader-navigation" ; term:status "active" .
+
+iasp:breadcrumb a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-navigation ;
+    skos:prefLabel "breadcrumb" ; skos:notation "breadcrumb"^^cls:pandoc-class ;
+    skos:scopeNote "Pointer back to where an idea was introduced or forward to where it continues. note.breadcrumb (named as a common pattern in IASP Core) renders with a directional chevron; add .badge for the BREADCRUMB label." ;
+    skos:related iasp:navigation ;
+    term:slug "breadcrumb" ; term:status "active" .
+
+iasp:navigation a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-navigation ;
+    skos:prefLabel "navigation" ; skos:altLabel "orientation", "reader navigation note" ;
+    skos:notation "navigation"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.navigation, teal ⇢ badge). Reader-navigation breadcrumbs and orientation guides. The docs also list note.orientation for the same purpose, but iasp-semantics.lua has no 'orientation' variant, so it currently renders as a plain note." ;
+    term:slug "navigation" ; term:status "active" .
+
+iasp:transition a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-navigation ;
+    skos:prefLabel "transition" ; skos:notation "transition"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.transition, inline ⇥ glyph). Hand-off moments, scene shifts or narrative pivots." ;
+    term:slug "transition" ; term:status "active" .
+
+iasp:prelude a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-navigation ;
+    skos:prefLabel "prelude" ; skos:notation "prelude"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.prelude). An opening note that prepares the reader for what follows." ;
+    term:opposite iasp:closing ;
+    term:slug "prelude" ; term:status "active" .
+
+iasp:closing a skos:Concept ;
+    skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-navigation ;
+    skos:prefLabel "closing" ; skos:altLabel "closing note", "endcap" ;
+    skos:notation "closing"^^cls:pandoc-class ;
+    skos:scopeNote "Build extension (note.closing, muted ∎ badge). Closing-note and endcap reflections." ;
+    term:slug "closing" ; term:status "active" .
+
+# ---------------------------------------------------------------------------
+# Collections
+# ---------------------------------------------------------------------------
+
+set:core a skos:Collection ;
+    skos:prefLabel "IASP Core" ;
+    dct:description "The terms defined in IASP Core (Semantic Vocabulary §6–7): twelve delivery roles and twenty-one modifiers. Everything else in the scheme is a build extension or a grouping concept." ;
+    term:scheme <urn:iasp:scheme:iasp> ; term:slug "core" ; term:owner "iasp" ; term:kind "profile" ;
+    skos:member
+        iasp:front-matter, iasp:series, iasp:part, iasp:chapter, iasp:section, iasp:interlude,
+        iasp:bridge, iasp:sidebar, iasp:note, iasp:footnote, iasp:endnotes, iasp:appendix,
+        iasp:thesis, iasp:claim, iasp:counterpoint, iasp:qualification, iasp:implication,
+        iasp:synthesis, iasp:reflection, iasp:provocation,
+        iasp:example, iasp:case-study, iasp:background, iasp:definition, iasp:gloss,
+        iasp:analogy, iasp:insight,
+        iasp:warning, iasp:notice, iasp:caution, iasp:assumption, iasp:limitation, iasp:uncertainty .
+
+set:delivery-order a skos:OrderedCollection ;
+    skos:prefLabel "Delivery roles in reading order" ;
+    dct:description "IASP Core delivery roles in the order Semantic Vocabulary §6 lists them: framing, structural divisions from largest to smallest, connective and parallel text, then ancillary material." ;
+    term:scheme <urn:iasp:scheme:iasp> ; term:slug "delivery-order" ; term:owner "iasp" ; term:kind "profile" ;
+    skos:member
+        iasp:front-matter, iasp:series, iasp:part, iasp:chapter, iasp:section, iasp:interlude,
+        iasp:bridge, iasp:sidebar, iasp:note, iasp:footnote, iasp:endnotes, iasp:appendix ;
+    skos:memberList (
+        iasp:front-matter iasp:series iasp:part iasp:chapter iasp:section iasp:interlude
+        iasp:bridge iasp:sidebar iasp:note iasp:footnote iasp:endnotes iasp:appendix
+    ) .
+
+set:note-variants a skos:Collection ;
+    skos:prefLabel "Note variants" ;
+    dct:description "Modifiers the build recognises after note (note.<variant>), each with its own box environment and badge or glyph: the keys of NOTE_VARIANT_CONFIG in iasp_tooling/lua/iasp-semantics.lua. Other modifiers composed with note still render, as a plain note box." ;
+    term:scheme <urn:iasp:scheme:iasp> ; term:slug "note-variants" ; term:owner "iasp" ; term:kind "profile" ;
+    skos:member
+        iasp:idea, iasp:insight, iasp:insight-major, iasp:warning, iasp:breadcrumb,
+        iasp:contrast, iasp:transition, iasp:navigation, iasp:bridge, iasp:usage,
+        iasp:integration, iasp:responsibility, iasp:reflexive, iasp:synthesis,
+        iasp:disclosure, iasp:misuse, iasp:diagnostic, iasp:closing, iasp:methodology,
+        iasp:context, iasp:scope, iasp:checklist, iasp:prelude .

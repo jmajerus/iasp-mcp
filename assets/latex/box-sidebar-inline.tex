@@ -1,0 +1,22 @@
+% Compact inline sidebar (epub:type="sidebar-inline")
+\newmdenv[
+  skipabove=0.6\baselineskip,
+  skipbelow=0.6\baselineskip,
+  linewidth=1pt,
+  linecolor=gray!54,
+  roundcorner=6pt,
+  backgroundcolor=sidebarbg,
+  innertopmargin=0.5em,
+  innerbottommargin=0.5em,
+  innerleftmargin=1em,
+  innerrightmargin=1em,
+]{sidebartight}
+
+\AtBeginEnvironment{sidebartight}{%
+  \needspace{4\baselineskip}% keep enough room above
+  \colorlet{blockquote-border}{blockquote-border-sidebar}% darken nested blockquotes
+}
+
+\AtEndEnvironment{sidebartight}{%
+  \colorlet{blockquote-border}{blockquote-border-default}% restore default blockquote accent
+}

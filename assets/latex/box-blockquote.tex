@@ -1,0 +1,35 @@
+\usepackage{xcolor}
+\usepackage{framed}
+
+\makeatletter
+\AtBeginDocument{%
+  \@ifundefined{makesavenoteenv}{%
+    \PackageWarning{box-blockquote}{footnote.sty missing; blockquote footnotes disabled}%
+  }{%
+    \makesavenoteenv{typoraquote}%
+    \makesavenoteenv{quote}%
+  }%
+}
+\makeatother
+
+\definecolor{blockquote-border-default}{gray}{0.88} % subtle gray accent
+\definecolor{blockquote-border-sidebar}{gray}{0.72} % darker accent when nested in sidebars
+\colorlet{blockquote-border}{blockquote-border-default}
+
+\newenvironment{typoraquote}
+  {%
+    \def\FrameCommand{%
+      {\color{blockquote-border}\vrule width 4pt}%
+      \hspace{0.8em}%
+    }%
+    \MakeFramed{\advance\hsize-1em\FrameRestore}%
+    \vspace{0.04\baselineskip}% soft top padding
+    \noindent
+  }
+  {%
+    \endMakeFramed
+  }
+
+\renewenvironment{quote}
+  {\begin{typoraquote}}
+  {\end{typoraquote}}

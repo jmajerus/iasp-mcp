@@ -1,0 +1,698 @@
+/* ==========================================================================
+   EPUB semantics-aware base stylesheet
+   - Uses only epub:type values from the EPUB 3 Structural Semantics Vocabulary
+   - No custom class names
+   ========================================================================== */
+
+/* EPUB namespace for epub:type selectors */
+@namespace epub "http://www.idpf.org/2007/ops";
+
+/* ---------- Base typography ---------- */
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Georgia", "Times New Roman", serif;
+  line-height: 1.4;
+  font-size: 1rem;
+  padding: 0.8em 0.9em;
+}
+
+p {
+  margin: 0 0 0.8em 0;
+}
+
+h1, h2, h3, h4 {
+  font-family: "Georgia", "Times New Roman", serif;
+  font-weight: bold;
+  line-height: 1.2;
+  margin: 1.2em 0 0.4em 0;
+}
+
+.section-heading-glyph {
+  display: inline-block;
+  width: 1.4ch;
+  margin-left: -1.4ch;
+  margin-right: 0.4ch;
+  text-align: right;
+  opacity: 0.85;
+}
+
+.catalog-collection-heading .section-heading-glyph,
+.section-heading-glyph.collection-heading-glyph {
+  width: 2.05ch;
+  margin-left: -2.05ch;
+  margin-right: 0.55ch;
+  font-size: 1.1em;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+}
+a:link,
+a:visited {
+  color: #0044aa;
+}
+a:hover,
+a:active {
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Parts (major divisions, e.g., Series I–IV)
+   epub:type="part"
+   ========================================================================== */
+
+[epub|type~="part"] {
+  break-before: page;
+  page-break-before: always; /* legacy property for older engines */
+  text-align: center;
+  margin-top: 40%;
+  margin-bottom: 40%;
+}
+
+[epub|type~="part"] h1 {
+  font-size: 1.8em;
+  margin-bottom: 0.4em;
+}
+
+[epub|type~="part"] h2 {
+  font-size: 1.4em;
+  margin-bottom: 0.3em;
+}
+
+[epub|type~="part"] h3 {
+  font-size: 1.1em;
+  font-weight: normal;
+  color: #555;
+}
+
+/* ==========================================================================
+   Chapters
+   epub:type="chapter"
+   ========================================================================== */
+
+h1[epub|type~="chapter"] {
+  break-before: page;
+  page-break-before: always;
+  font-size: 1.6em;
+  margin-top: 25%;
+  margin-bottom: 0.6em;
+  text-align: left;
+}
+
+/* Optional: chapter number styling if present as first inline */
+h1[epub|type~="chapter"] span.chapter-number {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.9em;
+}
+
+/* ==========================================================================
+   Subchapters / major sections within chapters
+   epub:type="subchapter"
+   ========================================================================== */
+
+h2[epub|type~="subchapter"] {
+  font-size: 1.2em;
+  margin-top: 2em;
+  margin-bottom: 0.5em;
+}
+
+/* If you later decide you want strong page breaks before major sections:
+   uncomment the two lines below.
+
+h2[epub|type~="subchapter"] {
+  break-before: page;
+  page-break-before: always;
+}
+*/
+
+/* ==========================================================================
+   Epigraphs
+   epub:type="epigraph"
+   ========================================================================== */
+
+[epub|type~="epigraph"] {
+  margin: 2em 10%;
+  font-style: italic;
+  text-align: right;
+}
+
+[epub|type~="epigraph"] p {
+  margin-bottom: 0.5em;
+}
+
+[epub|type~="epigraph"] .attribution {
+  font-style: normal;
+  font-size: 0.9em;
+  color: #555;
+}
+
+/* ==========================================================================
+  Asides
+  epub:type="aside"
+  ========================================================================== */
+
+[epub|type~="aside"] {
+  border-left: 4px solid #888;
+  background-color: rgba(0, 0, 0, 0.04);
+  padding: 0.8em 1em;
+  margin: 1.5em 0;
+}
+
+[epub|type~="aside"] h2,
+[epub|type~="aside"] h3 {
+  margin-top: 0;
+  font-size: 1em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ==========================================================================
+  Bridges (inter-series bridges)
+  epub:type="bridge"
+   ========================================================================= */
+
+[epub|type~="bridge"] {
+  border-left: 4px solid #6f58b9;
+  border-right: 4px solid #6f58b9;
+  background-color: #f6f2ff;
+  padding: 1.3em 1.4em;
+  margin: 2.2em 0;
+  border-radius: 6px;
+}
+
+[epub|type~="bridge"] h2,
+[epub|type~="bridge"] h3 {
+  margin-top: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 1.05em;
+}
+
+[epub|type~="bridge"] p {
+  margin-bottom: 0.85em;
+}
+
+[epub|type~="bridge"] p:last-child {
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+   Notes, Examples, Definitions
+   epub:type="note" | "example" | "definition"
+   ========================================================================= */
+
+[epub|type~="note"],
+[epub|type~="example"],
+[epub|type~="definition"] {
+  padding: 0.9em 1em;
+  margin: 1.4em 0;
+  border-radius: 0 6px 6px 0;
+}
+
+/* Note variants override the --note-* variables below to customize palettes. */
+[epub|type~="note"] {
+  --note-border-color: #e6c35a;
+  --note-background-color: #fff9ed;
+  --note-marker-color: #8a5a00;
+  --note-marker-bg: rgba(230, 195, 90, 0.18);
+  border-left: 4px solid var(--note-border-color, #e6c35a);
+  background-color: var(--note-background-color, #fff9ed);
+  padding-top: 0.55em;
+  padding-bottom: 0.85em;
+}
+
+/* Trim excess space ahead of note titles */
+[epub|type~="note"] > :first-child {
+  margin-top: 0;
+}
+
+[epub|type~="note"] > h2:first-child,
+[epub|type~="note"] > h3:first-child,
+[epub|type~="note"] > h4:first-child,
+[epub|type~="note"] > h5:first-child,
+[epub|type~="note"] > h6:first-child {
+  margin-top: 0.15em;
+}
+
+[epub|type~="note"].idea,
+[epub|type~="note"].insight {
+  --note-border-color: #d9a300;
+  --note-background-color: #fff6d5;
+}
+
+[epub|type~="note"].warning {
+  --note-border-color: #c05621;
+  --note-background-color: #fff1e6;
+  --note-marker-color: #8c2f00;
+  --note-marker-bg: rgba(192, 86, 33, 0.18);
+}
+
+[epub|type~="note"].contrast {
+  --note-border-color: #7e3af2;
+  --note-background-color: #f4ebff;
+  --note-marker-color: #4c1d95;
+  --note-marker-bg: rgba(126, 58, 242, 0.16);
+}
+
+[epub|type~="note"].transition {
+  --note-border-color: #2563eb;
+  --note-background-color: #eaf2ff;
+  --note-marker-color: #1e3a8a;
+  --note-marker-bg: rgba(37, 99, 235, 0.16);
+}
+
+[epub|type~="note"].navigation {
+  --note-border-color: #0f6b75;
+  --note-background-color: #e6f6f7;
+  --note-marker-color: #084a52;
+  --note-marker-bg: rgba(15, 107, 117, 0.16);
+}
+
+[epub|type~="note"].bridge {
+  --note-border-color: #6f58b9;
+  --note-background-color: #f4f0ff;
+  --note-marker-color: #4a3792;
+  --note-marker-bg: rgba(111, 88, 185, 0.17);
+}
+
+[epub|type~="note"].usage {
+  --note-border-color: #3b6ea8;
+  --note-background-color: #eef4fa;
+  --note-marker-color: #1f3f66;
+  --note-marker-bg: rgba(59, 110, 168, 0.16);
+}
+
+[epub|type~="note"].integration {
+  --note-border-color: #0f766e;
+  --note-background-color: #e8f7f6;
+  --note-marker-color: #0b4f4a;
+  --note-marker-bg: rgba(15, 118, 110, 0.16);
+}
+
+[epub|type~="note"].responsibility {
+  --note-border-color: #b45309;
+  --note-background-color: #fff4e6;
+  --note-marker-color: #7c2d12;
+  --note-marker-bg: rgba(180, 83, 9, 0.16);
+}
+
+[epub|type~="note"].reflexive {
+  --note-border-color: #64748b;
+  --note-background-color: #eff2f7;
+  --note-marker-color: #334155;
+  --note-marker-bg: rgba(100, 116, 139, 0.16);
+}
+
+[epub|type~="note"].synthesis {
+  --note-border-color: #2f855a;
+  --note-background-color: #e7f7ef;
+  --note-marker-color: #1b5e3c;
+  --note-marker-bg: rgba(47, 133, 90, 0.16);
+}
+
+[epub|type~="note"].disclosure {
+  --note-border-color: #a855f7;
+  --note-background-color: #f5edff;
+  --note-marker-color: #6b21a8;
+  --note-marker-bg: rgba(168, 85, 247, 0.16);
+}
+
+[epub|type~="note"].misuse {
+  --note-border-color: #b42318;
+  --note-background-color: #ffecea;
+  --note-marker-color: #7a120c;
+  --note-marker-bg: rgba(180, 35, 24, 0.18);
+}
+
+[epub|type~="note"].diagnostic {
+  --note-border-color: #2454c6;
+  --note-background-color: #e7f0ff;
+  --note-marker-color: #17337a;
+  --note-marker-bg: rgba(36, 84, 198, 0.18);
+}
+
+[epub|type~="note"].closing {
+  --note-border-color: #475467;
+  --note-background-color: #f5f7fb;
+  --note-marker-color: #2f3949;
+  --note-marker-bg: rgba(71, 84, 103, 0.16);
+}
+
+[epub|type~="note"].breadcrumb {
+  --note-border-color: #1d5671;
+  --note-background-color: #eef5fb;
+  --note-marker-color: #153a4a;
+  --note-marker-bg: rgba(29, 86, 113, 0.16);
+}
+
+[epub|type~="note"].methodology {
+  --note-border-color: #5046e5;
+  --note-background-color: #eef0ff;
+  --note-marker-color: #312e81;
+  --note-marker-bg: rgba(80, 70, 229, 0.16);
+}
+
+[epub|type~="note"].context {
+  --note-border-color: #4a5568;
+  --note-background-color: #f0f4f8;
+  --note-marker-color: #2d3748;
+  --note-marker-bg: rgba(74, 85, 104, 0.16);
+}
+
+[epub|type~="note"].scope {
+  --note-border-color: #92400e;
+  --note-background-color: #fef3e2;
+  --note-marker-color: #78350f;
+  --note-marker-bg: rgba(146, 64, 14, 0.16);
+}
+
+[epub|type~="note"].checklist {
+  --note-border-color: #0d9488;
+  --note-background-color: #ccfbf1;
+  --note-marker-color: #115e59;
+  --note-marker-bg: rgba(13, 148, 136, 0.16);
+}
+
+[epub|type~="note"].prelude {
+  --note-border-color: #9ca3af;
+  --note-background-color: #f9fafb;
+  --note-marker-color: #4b5563;
+  --note-marker-bg: rgba(156, 163, 175, 0.16);
+}
+
+[epub|type~="note"].orientation {
+  --note-border-color: #0f6b75;
+  --note-background-color: #e6f6f7;
+  --note-marker-color: #084a52;
+  --note-marker-bg: rgba(15, 107, 117, 0.16);
+}
+
+[epub|type~="note"].ai {
+  --note-border-color: #2563eb;
+  --note-background-color: #eef6ff;
+  --note-marker-color: #1d4ed8;
+  --note-marker-bg: rgba(37, 99, 235, 0.16);
+}
+
+[epub|type~="example"] {
+  border-left: 4px solid #2f80ed;
+  background-color: #e8f1ff;
+}
+
+[epub|type~="definition"] {
+  border-left: 4px solid #1b7f4d;
+  background-color: #e6f7ef;
+}
+
+[epub|type~="note"]::before,
+[epub|type~="example"]::before,
+[epub|type~="definition"]::before {
+  display: block;
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #5f4100;
+  margin-bottom: 0.35em;
+}
+
+[epub|type~="note"]::before {
+  content: "✦";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 999px;
+  background-color: var(
+    --glyph-marker-background,
+    var(--note-marker-bg, rgba(230, 195, 90, 0.18))
+  );
+  font-size: 1.05em;
+  line-height: 1;
+  font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  color: var(--note-marker-color, #8a5a00);
+  margin-bottom: 0.45em;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 500;
+}
+
+[epub|type~="example"]::before {
+  content: "Example";
+  color: #1a4d8d;
+}
+
+[epub|type~="definition"]::before {
+  content: "Definition";
+  color: #125436;
+}
+
+[epub|type~="note"].idea::before {
+  content: "💡";
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  background: none;
+  margin-bottom: 0;
+  margin-right: 0.4em;
+}
+
+[epub|type~="note"].insight::before {
+  content: "⁂";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  background: none;
+  margin: 0 0.4em 0 0;
+  font-size: 1.05em;
+  color: #7a4ac4;
+  vertical-align: baseline;
+}
+
+[epub|type~="note"].insight.major::before {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.05em;
+  height: 2.05em;
+  border-radius: 999px;
+  background-color: var(--glyph-marker-background, rgba(122, 74, 196, 0.15));
+  margin: 0 0 0.4em 0;
+  font-weight: 600;
+}
+
+[epub|type~="insight"],
+[epub|type~="insight"] [epub|type] {
+  border-left: 3px solid #6a3fb3;
+  background-color: #f7f1ff;
+  padding: 0.8em 1em;
+  margin: 1.3em 0;
+  border-radius: 6px;
+}
+
+[epub|type~="insight"]::before {
+  content: "⁂";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.45em 0 0;
+  font-size: 1.05em;
+  color: #6a3fb3;
+  vertical-align: baseline;
+}
+
+[epub|type~="insight"] h2,
+[epub|type~="insight"] h3 {
+  margin-top: 0.4em;
+}
+
+[epub|type~="insight"][epub|type~="major"] {
+  border-left-width: 4px;
+  background-color: #efe3ff;
+}
+
+[epub|type~="insight"][epub|type~="major"]::before {
+  content: "⁂";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.05em;
+  height: 2.05em;
+  border-radius: 999px;
+  background-color: var(--glyph-marker-background, rgba(106, 63, 179, 0.15));
+  font-weight: 600;
+  margin: 0 0 0.4em 0;
+}
+
+[epub|type~="note"].breadcrumb::before {
+  content: "➤";
+}
+
+[epub|type~="note"].contrast::before {
+  content: "⇆";
+}
+
+[epub|type~="note"].transition::before {
+  content: "⇥";
+}
+
+[epub|type~="note"].navigation::before {
+  content: "⇢";
+}
+
+[epub|type~="note"].bridge::before {
+  content: "⟷";
+}
+
+[epub|type~="note"].usage::before {
+  content: "⚙";
+}
+
+[epub|type~="note"].integration::before {
+  content: "∞";
+}
+
+[epub|type~="note"].responsibility::before {
+  content: "⚖";
+}
+
+[epub|type~="note"].reflexive::before {
+  content: "⟲";
+}
+
+[epub|type~="note"].synthesis::before {
+  content: "⊕";
+}
+
+[epub|type~="note"].disclosure::before {
+  content: "◊";
+}
+
+[epub|type~="note"].misuse::before {
+  content: "✕";
+}
+
+[epub|type~="note"].diagnostic::before {
+  content: "🔍";
+}
+
+[epub|type~="note"].closing::before {
+  content: "∎";
+}
+
+[epub|type~="note"].warning::before {
+  content: "⚠️";
+}
+
+[epub|type~="note"].methodology::before {
+  content: "⊢";
+}
+
+[epub|type~="note"].context::before {
+  content: "◉";
+}
+
+[epub|type~="note"].scope::before {
+  content: "◎";
+}
+
+[epub|type~="note"].checklist::before {
+  content: "☐";
+}
+
+[epub|type~="note"].prelude::before {
+  content: "◈";
+}
+
+[epub|type~="note"].orientation::before {
+  content: "⇢";
+}
+
+[epub|type~="note"].ai::before {
+  content: "◇";
+}
+
+/* ==========================================================================
+   Frontmatter / Backmatter (optional wrappers)
+   epub:type="frontmatter", "backmatter"
+   ========================================================================== */
+
+[epub|type~="frontmatter"] h1,
+[epub|type~="frontmatter"] h2 {
+  text-align: center;
+}
+
+[epub|type~="backmatter"] h1,
+[epub|type~="backmatter"] h2 {
+  text-align: left;
+}
+
+/* ==========================================================================
+   Appendices
+   epub:type="appendix"
+   ========================================================================== */
+
+h1[epub|type~="appendix"] {
+  break-before: page;
+  page-break-before: always;
+  font-size: 1.4em;
+  margin-top: 25%;
+  margin-bottom: 0.6em;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Optional: slightly different paragraph spacing in appendices */
+
+[epub|type~="appendix"] p {
+  margin-bottom: 0.7em;
+}
+
+/* ==========================================================================
+   Miscellaneous
+   ========================================================================== */
+
+/* Manual page breaks (use with `:::.page-break` blocks in markdown) */
+.page-break,
+.pagebreak {
+  display: block;
+  break-before: page !important;
+  page-break-before: always !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  height: 0;
+}
+
+/* Images centered by default */
+img {
+  display: block;
+  margin: 1em auto;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Horizontal rule */
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 1.5em 0;
+}
+
+hr.catalog-divider {
+  border: none;
+  border-top: 1px solid #999;
+  margin: 1.5em 0;
+  width: 100%;
+}

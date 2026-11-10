@@ -1,0 +1,92 @@
+/* ==========================================================================
+  EPUB presentation stylesheet (device-specific rules)
+  - Structural semantics live in styles-shared.css (included first)
+  - This file only handles typography, layout resets, and reader quirks
+  ========================================================================== */
+
+/* ---------- Base typography ---------- */
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  /* Keep it simple and device-friendly */
+  font-family: "Georgia", "Times New Roman", serif;
+  font-size: 1em;
+  line-height: 1.5;
+  widows: 2;
+  orphans: 2;
+}
+
+/* Paragraphs */
+p {
+  margin: 0 0 0.8em 0;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 1.5em 0 0.6em 0;
+}
+
+.section-heading-glyph {
+  display: inline-block;
+  width: 1.4ch;
+  margin-left: -1.4ch;
+  margin-right: 0.4ch;
+  text-align: right;
+  opacity: 0.85;
+}
+
+.catalog-collection-heading .section-heading-glyph,
+.section-heading-glyph.collection-heading-glyph {
+  width: 2.05ch;
+  margin-left: -2.05ch;
+  margin-right: 0.55ch;
+  font-size: 1.1em;
+}
+
+/* Make lower-level headings slightly lighter-weight visually */
+h3, h4, h5, h6 {
+  font-weight: 500;
+}
+
+/* Links */
+a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* Lists */
+ul, ol {
+  margin: 0 0 0.8em 1.5em;
+  padding: 0;
+}
+
+/* Code */
+code, pre {
+  font-family: monospace;
+  font-size: 0.95em;
+}
+
+pre {
+  white-space: pre-wrap;
+  margin: 0.8em 0;
+}
+
+/* Additional semantics (parts, sidebars, etc.) are defined in styles-shared.css */
+
+/* Manual page breaks (use with `:::.page-break`) */
+.page-break,
+.pagebreak {
+  display: block;
+  break-before: page !important;
+  page-break-before: always !important;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  height: 0;
+}

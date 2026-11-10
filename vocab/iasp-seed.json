@@ -1,0 +1,2571 @@
+{
+  "log": "b8e1db33-25fc-49ce-93dd-80d332647002",
+  "version": 343,
+  "head": 343,
+  "demo": false,
+  "schemes": [
+    {
+      "notations": [],
+      "slugUniqueDepths": [],
+      "id": "iasp",
+      "label": "IASP (Informative Authoring Semantics Profile)",
+      "description": "IASP: names for what a passage of long-form nonfiction is doing — its delivery role relative to the main flow (Axis A) and the rhetorical, expository or stance-signalling work it does (Axis B). Terms compose as delivery.modifier (e.g. note.insight, sidebar.example). Informative, not normative: nothing is required and untagged text is valid.",
+      "hierarchy": "tree",
+      "admissionTest": "",
+      "slugScope": "scheme",
+      "proposalSource": "optional",
+      "sourceUri": "urn:iasp:scheme:iasp",
+      "created": 341
+    }
+  ],
+  "terms": [
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "analogy",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "analogy",
+      "altLabels": [],
+      "scopeNote": "Comparative explanation.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_8215118502474e90aa8a3112766ad6ff"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:analogy",
+        "iasp:modifier/exposition-and-support/analogy"
+      ],
+      "slug": "analogy",
+      "id": "t_70d399bb0b0446239e23b1cc885ff9f4",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:analogy",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/analogy",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "appendix",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "appendix",
+      "altLabels": [],
+      "scopeNote": "Material outside the main narrative flow.",
+      "status": "active",
+      "relations": [],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#appendix",
+          "match": "closeMatch"
+        },
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-appendix",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:appendix",
+        "iasp:delivery-role/appendix"
+      ],
+      "slug": "appendix",
+      "id": "t_c86f78d5249943bf84a16c0a501e333d",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:appendix",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/appendix",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [],
+      "formerSlugs": [],
+      "label": "argument and reasoning",
+      "altLabels": [],
+      "scopeNote": "Modifiers naming a move in the argument.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_c987eb2c3eed4eb884b36730e74cfc51"
+      ],
+      "aliases": [
+        "urn:iasp:concept:argument-and-reasoning",
+        "iasp:modifier/argument-and-reasoning"
+      ],
+      "slug": "argument-and-reasoning",
+      "id": "t_f735e6f9abf949f0bfd0cf4b7d124004",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:argument-and-reasoning",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning",
+      "depth": 1,
+      "narrower": [
+        "t_09b29504327e42c1be88f167af855f86",
+        "t_11363627d0d546139891f5b3288f9e86",
+        "t_685cd2e3d4f94d06a3470ab4fdbf8995",
+        "t_6adfd89ae7da4cd194bcdeecdfd0a49c",
+        "t_74ff3c695025423ea5665af81b0b2347",
+        "t_877829c033324a7ea0c036d93809ade7",
+        "t_a44406b4c6804ed1b84a2487a83648a4",
+        "t_f993fed5d42848a19b195f918e367805",
+        "t_fe34bd4daedd41fba0d73d4e5327237e",
+        "t_feb5d7c8a0cb4a459f990bcd421a7cd1"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "assumption",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "assumption",
+      "altLabels": [],
+      "scopeNote": "Declared premise.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_b99cf7351850411688d6bd75fe139ea0"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:assumption",
+        "iasp:modifier/reader-signals-and-stance/assumption"
+      ],
+      "slug": "assumption",
+      "id": "t_5c76a5461a724ea39a8df78fcecfd589",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:assumption",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/assumption",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "backmatter",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "back-matter",
+      "altLabels": [
+        "backmatter"
+      ],
+      "scopeNote": "Build extension. Material closing the work after the main narrative (bibliography, index, colophon, etc.); counterpart to front-matter.",
+      "status": "active",
+      "relations": [],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#backmatter",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:back-matter",
+        "iasp:delivery-role/back-matter"
+      ],
+      "slug": "back-matter",
+      "id": "t_9e68b82ac9514cb49144a3f123919148",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:back-matter",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/back-matter",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "background",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "background",
+      "altLabels": [],
+      "scopeNote": "Contextual grounding. Example composition: sidebar.background.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_d3054f2c6e564f6fb351059b297b0403"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:background",
+        "iasp:modifier/exposition-and-support/background"
+      ],
+      "slug": "background",
+      "id": "t_f5638fdcfc89403b93d317c246ff969b",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:background",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/background",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "breadcrumb",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "breadcrumb",
+      "altLabels": [],
+      "scopeNote": "Pointer back to where an idea was introduced or forward to where it continues. note.breadcrumb (named as a common pattern in IASP Core) renders with a directional chevron; add .badge for the BREADCRUMB label.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_7b0ce19f57f445a7ba17d422ed95e75f"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_97f29471b95f46a5a477ad88f323fdfc"
+      ],
+      "aliases": [
+        "urn:iasp:concept:breadcrumb",
+        "iasp:modifier/reader-navigation/breadcrumb"
+      ],
+      "slug": "breadcrumb",
+      "id": "t_1f93faa2fd15444bac6e97d59439fd90",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:breadcrumb",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-navigation/breadcrumb",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "bridge",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "bridge",
+      "altLabels": [
+        "bridgehead"
+      ],
+      "scopeNote": "Transitional connective text. Also used as a note variant (note.bridge, lavender badge) to stitch concepts together inside a chapter or appendix. In builds a bridge maps to ARIA role complementary and accepts .pre-pagebreak / .post-pagebreak.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_543eb257ebc74f5db8db810a27656e71"
+        },
+        {
+          "type": "related",
+          "target": "t_91f7017a4cac45cc9a0dc30fdce82ba9"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:bridge",
+        "iasp:delivery-role/bridge"
+      ],
+      "slug": "bridge",
+      "id": "t_13facc56e9fe47099a6c2fa086caf7d7",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:bridge",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/bridge",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "callout",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "callout",
+      "altLabels": [
+        "margin note"
+      ],
+      "scopeNote": "Build extension. A short aside lifted out of the flow with a light border-left treatment.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_1e6ad54c49264bb08ae31fb1891d8057"
+        },
+        {
+          "type": "related",
+          "target": "t_2e1568675fd44e38ae2354175c8047e8"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:callout",
+        "iasp:delivery-role/callout"
+      ],
+      "slug": "callout",
+      "id": "t_765a3b3d98024267967bbb9df853c173",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:callout",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/callout",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "case-study",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "case-study",
+      "altLabels": [
+        "case study"
+      ],
+      "scopeNote": "Extended real-world instance.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_8215118502474e90aa8a3112766ad6ff"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:case-study",
+        "iasp:modifier/exposition-and-support/case-study"
+      ],
+      "slug": "case-study",
+      "id": "t_97201cc5688443c9a95348336829c9e5",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:case-study",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/case-study",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "caution",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "caution",
+      "altLabels": [],
+      "scopeNote": "Advice against overreach.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_893b091ab6564e4784a5f9e86471b6de"
+        },
+        {
+          "type": "related",
+          "target": "t_ea5f2b7ef8294af2ac1cbeca34dbc40b"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:caution",
+        "iasp:modifier/reader-signals-and-stance/caution"
+      ],
+      "slug": "caution",
+      "id": "t_cd00dab4ac0c488eaac2603f99fb4b3b",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:caution",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/caution",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "chapter",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "chapter",
+      "altLabels": [],
+      "scopeNote": "Primary unit of argument.",
+      "status": "active",
+      "relations": [],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#chapter",
+          "match": "closeMatch"
+        },
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-chapter",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:chapter",
+        "iasp:delivery-role/chapter"
+      ],
+      "slug": "chapter",
+      "id": "t_0a9720a3797149558a057770aa6ebb90",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:chapter",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/chapter",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "checklist",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "checklist",
+      "altLabels": [],
+      "scopeNote": "Build extension (note.checklist, teal ☐ badge). Indicative checklists, verification criteria or structured evidence markers.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_3b0a1a8df7fe416d8f11bf40f31e6b39"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:checklist",
+        "iasp:modifier/exposition-and-support/checklist"
+      ],
+      "slug": "checklist",
+      "id": "t_ab752d3f0f0d43e4a11fcae1b55f015d",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:checklist",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/checklist",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "claim",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "claim",
+      "altLabels": [],
+      "scopeNote": "Supporting assertion.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_09b29504327e42c1be88f167af855f86"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:claim",
+        "iasp:modifier/argument-and-reasoning/claim"
+      ],
+      "slug": "claim",
+      "id": "t_11363627d0d546139891f5b3288f9e86",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:claim",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/claim",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "closing",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "closing",
+      "altLabels": [
+        "closing note",
+        "endcap"
+      ],
+      "scopeNote": "Build extension (note.closing, muted ∎ badge). Closing-note and endcap reflections.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "opposite",
+          "target": "t_fa69f04676564077823301b357ff438d"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_97f29471b95f46a5a477ad88f323fdfc"
+      ],
+      "aliases": [
+        "urn:iasp:concept:closing",
+        "iasp:modifier/reader-navigation/closing"
+      ],
+      "slug": "closing",
+      "id": "t_08edc39ed64149dd90d8ca4f3929271d",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:closing",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-navigation/closing",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "context",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "context",
+      "altLabels": [],
+      "scopeNote": "Build extension (note.context, warm slate ◉ badge). Contextual framing that sets the scene or establishes background.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_f5638fdcfc89403b93d317c246ff969b"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:context",
+        "iasp:modifier/exposition-and-support/context"
+      ],
+      "slug": "context",
+      "id": "t_d3054f2c6e564f6fb351059b297b0403",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:context",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/context",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "contrast",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "contrast",
+      "altLabels": [
+        "compare/contrast"
+      ],
+      "scopeNote": "Build extension (note.contrast, inline ⇆ glyph). A short compare/contrast clarification between frameworks.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_a44406b4c6804ed1b84a2487a83648a4"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:contrast",
+        "iasp:modifier/argument-and-reasoning/contrast"
+      ],
+      "slug": "contrast",
+      "id": "t_6adfd89ae7da4cd194bcdeecdfd0a49c",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:contrast",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/contrast",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "counterpoint",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "counterpoint",
+      "altLabels": [],
+      "scopeNote": "Alternative or opposing view.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_6adfd89ae7da4cd194bcdeecdfd0a49c"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:counterpoint",
+        "iasp:modifier/argument-and-reasoning/counterpoint"
+      ],
+      "slug": "counterpoint",
+      "id": "t_a44406b4c6804ed1b84a2487a83648a4",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:counterpoint",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/counterpoint",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "definition",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "definition",
+      "altLabels": [],
+      "scopeNote": "Clarification of a term. Also usable alone as a block (::: definition, green glossary frame). Example composition: note.definition.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_098e663d694c428ea018d730152ae286"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:definition",
+        "iasp:modifier/exposition-and-support/definition"
+      ],
+      "slug": "definition",
+      "id": "t_86df5bd9e7a349cd87b90f740de97158",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:definition",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/definition",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [],
+      "formerSlugs": [],
+      "label": "delivery role",
+      "altLabels": [
+        "Axis A"
+      ],
+      "scopeNote": "How a passage relates to the surrounding narrative flow: its placement and relationship to the main text. The leftmost term in a composition (delivery.modifier). Unmarked text is assumed to be main flow; one delivery role per passage is usually enough.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [],
+      "aliases": [
+        "urn:iasp:concept:delivery-role",
+        "iasp:delivery-role"
+      ],
+      "slug": "delivery-role",
+      "id": "t_f94e125cef604756a5cbc8b6e7775444",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:delivery-role",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role",
+      "depth": 0,
+      "narrower": [
+        "t_0a9720a3797149558a057770aa6ebb90",
+        "t_13facc56e9fe47099a6c2fa086caf7d7",
+        "t_1e6ad54c49264bb08ae31fb1891d8057",
+        "t_2e1568675fd44e38ae2354175c8047e8",
+        "t_33992546cf7b40618ca21b1dccc3d355",
+        "t_4dc73dc81bee44da93af108792807b61",
+        "t_6d343b31aa3e49db9db914780fd1a0d1",
+        "t_765a3b3d98024267967bbb9df853c173",
+        "t_91f7017a4cac45cc9a0dc30fdce82ba9",
+        "t_9e68b82ac9514cb49144a3f123919148",
+        "t_b211a8757c1c4246a1d433c9db9280dd",
+        "t_c86f78d5249943bf84a16c0a501e333d",
+        "t_d5e303f8347946fba0c59e753ab4e2e6",
+        "t_e20589486eb04fcabf6d4e0fdcdcea7a",
+        "t_ecb43937b3c148bfaa3c4f0ae15cf70e"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "diagnostic",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "diagnostic",
+      "altLabels": [
+        "diagnostic note"
+      ],
+      "scopeNote": "Build extension (note.diagnostic, blue 🔍 badge). Pattern-recognition checklists and diagnostic callouts.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_ab752d3f0f0d43e4a11fcae1b55f015d"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:diagnostic",
+        "iasp:modifier/exposition-and-support/diagnostic"
+      ],
+      "slug": "diagnostic",
+      "id": "t_3b0a1a8df7fe416d8f11bf40f31e6b39",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:diagnostic",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/diagnostic",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "disclosure",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "disclosure",
+      "altLabels": [
+        "transparency note"
+      ],
+      "scopeNote": "Build extension (note.disclosure, violet ◊ badge). Transparency notes: assumptions, limits, or what is being disclosed.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_1d8f2d9b271f4a96b73ccd63e18497e4"
+        },
+        {
+          "type": "related",
+          "target": "t_5c76a5461a724ea39a8df78fcecfd589"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:disclosure",
+        "iasp:modifier/reader-signals-and-stance/disclosure"
+      ],
+      "slug": "disclosure",
+      "id": "t_b99cf7351850411688d6bd75fe139ea0",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:disclosure",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/disclosure",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "endnotes",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        },
+        {
+          "value": "footnotes",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "endnotes",
+      "altLabels": [
+        "footnotes"
+      ],
+      "scopeNote": "Deferred ancillary content. The build's 'footnotes' class maps to doc-endnotes.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_4dc73dc81bee44da93af108792807b61"
+        }
+      ],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#endnotes",
+          "match": "closeMatch"
+        },
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-endnotes",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:endnotes",
+        "iasp:delivery-role/endnotes"
+      ],
+      "slug": "endnotes",
+      "id": "t_e20589486eb04fcabf6d4e0fdcdcea7a",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:endnotes",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/endnotes",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "epigraph",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "epigraph",
+      "altLabels": [],
+      "scopeNote": "Build extension. A quotation set at the head of a part, chapter or section.",
+      "status": "active",
+      "relations": [],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#epigraph",
+          "match": "closeMatch"
+        },
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-epigraph",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:epigraph",
+        "iasp:delivery-role/epigraph"
+      ],
+      "slug": "epigraph",
+      "id": "t_d5e303f8347946fba0c59e753ab4e2e6",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:epigraph",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/epigraph",
+      "depth": 1,
+      "narrower": [
+        "t_05da847993db471c9c5989cc0ffc4140"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "epigraph-inline",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "epigraph-inline",
+      "altLabels": [
+        "inline epigraph"
+      ],
+      "scopeNote": "Build extension. An epigraph set within the running text rather than as a heading block.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_d5e303f8347946fba0c59e753ab4e2e6"
+      ],
+      "aliases": [
+        "urn:iasp:concept:epigraph-inline",
+        "iasp:delivery-role/epigraph/epigraph-inline"
+      ],
+      "slug": "epigraph-inline",
+      "id": "t_05da847993db471c9c5989cc0ffc4140",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:epigraph-inline",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/epigraph/epigraph-inline",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "example",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "example",
+      "altLabels": [],
+      "scopeNote": "Concrete illustration. Also usable alone as a block (::: example, blue accent frame). Example composition: sidebar.example.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_97201cc5688443c9a95348336829c9e5"
+        },
+        {
+          "type": "related",
+          "target": "t_70d399bb0b0446239e23b1cc885ff9f4"
+        }
+      ],
+      "links": [
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-example",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:example",
+        "iasp:modifier/exposition-and-support/example"
+      ],
+      "slug": "example",
+      "id": "t_8215118502474e90aa8a3112766ad6ff",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:example",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/example",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [],
+      "formerSlugs": [],
+      "label": "exposition and support",
+      "altLabels": [],
+      "scopeNote": "Modifiers naming material that explains, illustrates or grounds the argument.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_c987eb2c3eed4eb884b36730e74cfc51"
+      ],
+      "aliases": [
+        "urn:iasp:concept:exposition-and-support",
+        "iasp:modifier/exposition-and-support"
+      ],
+      "slug": "exposition-and-support",
+      "id": "t_28fd414ff59c4c66a4bd560b54b6afcf",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:exposition-and-support",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support",
+      "depth": 1,
+      "narrower": [
+        "t_098e663d694c428ea018d730152ae286",
+        "t_0f06c8edfc7947f5b76d9254bd8eb40d",
+        "t_3b0a1a8df7fe416d8f11bf40f31e6b39",
+        "t_598135e26b8542b09a9cd40a2c0fa06d",
+        "t_70d399bb0b0446239e23b1cc885ff9f4",
+        "t_77dd87621c5b4c5694db26c6f3bc69ae",
+        "t_8215118502474e90aa8a3112766ad6ff",
+        "t_86df5bd9e7a349cd87b90f740de97158",
+        "t_97201cc5688443c9a95348336829c9e5",
+        "t_ab752d3f0f0d43e4a11fcae1b55f015d",
+        "t_d3054f2c6e564f6fb351059b297b0403",
+        "t_f5638fdcfc89403b93d317c246ff969b",
+        "t_fcc2ca6241094e6a8d8136c6db29be1f"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "footnote",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "footnote",
+      "altLabels": [],
+      "scopeNote": "Localized ancillary content. Example composition: footnote.counterpoint.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_e20589486eb04fcabf6d4e0fdcdcea7a"
+        }
+      ],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#footnote",
+          "match": "closeMatch"
+        },
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-footnote",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:footnote",
+        "iasp:delivery-role/footnote"
+      ],
+      "slug": "footnote",
+      "id": "t_4dc73dc81bee44da93af108792807b61",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:footnote",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/footnote",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "front-matter",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        },
+        {
+          "value": "frontmatter",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "front-matter",
+      "altLabels": [
+        "frontmatter"
+      ],
+      "scopeNote": "Material framing the work (preface, introduction, etc.).",
+      "status": "active",
+      "relations": [],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#frontmatter",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:front-matter",
+        "iasp:delivery-role/front-matter"
+      ],
+      "slug": "front-matter",
+      "id": "t_b211a8757c1c4246a1d433c9db9280dd",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:front-matter",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/front-matter",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "gloss",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "gloss",
+      "altLabels": [],
+      "scopeNote": "Brief explanatory note.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_86df5bd9e7a349cd87b90f740de97158"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:gloss",
+        "iasp:modifier/exposition-and-support/gloss"
+      ],
+      "slug": "gloss",
+      "id": "t_098e663d694c428ea018d730152ae286",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:gloss",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/gloss",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "idea",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "idea",
+      "altLabels": [],
+      "scopeNote": "Build extension (note.idea, inline 💡 glyph). A suggestion or generative thought offered in passing.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_598135e26b8542b09a9cd40a2c0fa06d"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:idea",
+        "iasp:modifier/exposition-and-support/idea"
+      ],
+      "slug": "idea",
+      "id": "t_fcc2ca6241094e6a8d8136c6db29be1f",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:idea",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/idea",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "implication",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "implication",
+      "altLabels": [],
+      "scopeNote": "Consequence of an argument.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:implication",
+        "iasp:modifier/argument-and-reasoning/implication"
+      ],
+      "slug": "implication",
+      "id": "t_f993fed5d42848a19b195f918e367805",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:implication",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/implication",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "insight",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "insight",
+      "altLabels": [],
+      "scopeNote": "Moment of realization or reframing. As a note variant (note.insight) it renders with an asterism row.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_fcc2ca6241094e6a8d8136c6db29be1f"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:insight",
+        "iasp:modifier/exposition-and-support/insight"
+      ],
+      "slug": "insight",
+      "id": "t_598135e26b8542b09a9cd40a2c0fa06d",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:insight",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/insight",
+      "depth": 2,
+      "narrower": [
+        "t_0a223ba1ff4046af8932f68441da34c6"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "integration",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "integration",
+      "altLabels": [],
+      "scopeNote": "Build extension (note.integration, teal ∞ badge). Guidance on integrating or synthesising across frameworks.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_74ff3c695025423ea5665af81b0b2347"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:integration",
+        "iasp:modifier/argument-and-reasoning/integration"
+      ],
+      "slug": "integration",
+      "id": "t_fe34bd4daedd41fba0d73d4e5327237e",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:integration",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/integration",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "interlude",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "interlude",
+      "altLabels": [],
+      "scopeNote": "Intentional pause or tonal shift.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_13facc56e9fe47099a6c2fa086caf7d7"
+        },
+        {
+          "type": "related",
+          "target": "t_feb5d7c8a0cb4a459f990bcd421a7cd1"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:interlude",
+        "iasp:delivery-role/interlude"
+      ],
+      "slug": "interlude",
+      "id": "t_91f7017a4cac45cc9a0dc30fdce82ba9",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:interlude",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/interlude",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "limitation",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "limitation",
+      "altLabels": [],
+      "scopeNote": "Known constraint.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_b99cf7351850411688d6bd75fe139ea0"
+        },
+        {
+          "type": "related",
+          "target": "t_3f4903aae74f45428c66b9f1b8775f2d"
+        },
+        {
+          "type": "related",
+          "target": "t_877829c033324a7ea0c036d93809ade7"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:limitation",
+        "iasp:modifier/reader-signals-and-stance/limitation"
+      ],
+      "slug": "limitation",
+      "id": "t_1d8f2d9b271f4a96b73ccd63e18497e4",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:limitation",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/limitation",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "insight.major",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "major insight",
+      "altLabels": [
+        "insight.major"
+      ],
+      "scopeNote": "Build extension (note.insight.major, badge strip). An insight given more weight than the asterism form.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_598135e26b8542b09a9cd40a2c0fa06d"
+      ],
+      "aliases": [
+        "urn:iasp:concept:insight-major",
+        "iasp:modifier/exposition-and-support/insight/major-insight"
+      ],
+      "slug": "insight-major",
+      "id": "t_0a223ba1ff4046af8932f68441da34c6",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:insight-major",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/insight/major-insight",
+      "depth": 3,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "methodology",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "methodology",
+      "altLabels": [],
+      "scopeNote": "Build extension (note.methodology, indigo ⊢ badge). Explains how the analysis is conducted.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:methodology",
+        "iasp:modifier/exposition-and-support/methodology"
+      ],
+      "slug": "methodology",
+      "id": "t_0f06c8edfc7947f5b76d9254bd8eb40d",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:methodology",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/methodology",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "misuse",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "misuse",
+      "altLabels": [
+        "don't weaponize this"
+      ],
+      "scopeNote": "Build extension (note.misuse, red ✕ badge). Flags common misreadings or warns against weaponizing a framework.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_ea5f2b7ef8294af2ac1cbeca34dbc40b"
+        },
+        {
+          "type": "related",
+          "target": "t_cd00dab4ac0c488eaac2603f99fb4b3b"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:misuse",
+        "iasp:modifier/reader-signals-and-stance/misuse"
+      ],
+      "slug": "misuse",
+      "id": "t_893b091ab6564e4784a5f9e86471b6de",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:misuse",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/misuse",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [],
+      "formerSlugs": [],
+      "label": "modifier",
+      "altLabels": [
+        "Axis B"
+      ],
+      "scopeNote": "What kind of work a passage is doing and what stance it signals: rhetorical function, reader guidance or epistemic stance. Qualifies a delivery role in a composition (delivery.modifier); one or two modifiers are usually enough.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [],
+      "aliases": [
+        "urn:iasp:concept:modifier",
+        "iasp:modifier"
+      ],
+      "slug": "modifier",
+      "id": "t_c987eb2c3eed4eb884b36730e74cfc51",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:modifier",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier",
+      "depth": 0,
+      "narrower": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf",
+        "t_74a4d702169c4e4a9a1a253418507316",
+        "t_97f29471b95f46a5a477ad88f323fdfc",
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "navigation",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "navigation",
+      "altLabels": [
+        "orientation",
+        "reader navigation note"
+      ],
+      "scopeNote": "Build extension (note.navigation, teal ⇢ badge). Reader-navigation breadcrumbs and orientation guides. The docs also list note.orientation for the same purpose, but iasp-semantics.lua has no 'orientation' variant, so it currently renders as a plain note.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_1f93faa2fd15444bac6e97d59439fd90"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_97f29471b95f46a5a477ad88f323fdfc"
+      ],
+      "aliases": [
+        "urn:iasp:concept:navigation",
+        "iasp:modifier/reader-navigation/navigation"
+      ],
+      "slug": "navigation",
+      "id": "t_7b0ce19f57f445a7ba17d422ed95e75f",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:navigation",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-navigation/navigation",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "note",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "note",
+      "altLabels": [],
+      "scopeNote": "Ancillary content tied to a point, but not necessarily a formal footnote. The most-composed role: the build recognises a fixed set of note variants (see the 'Note variants' collection), each with its own box style, written note.<variant>.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_765a3b3d98024267967bbb9df853c173"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:note",
+        "iasp:delivery-role/note"
+      ],
+      "slug": "note",
+      "id": "t_2e1568675fd44e38ae2354175c8047e8",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:note",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/note",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "notice",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "notice",
+      "altLabels": [],
+      "scopeNote": "Important framing information.",
+      "status": "active",
+      "relations": [],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#notice",
+          "match": "closeMatch"
+        },
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-notice",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:notice",
+        "iasp:modifier/reader-signals-and-stance/notice"
+      ],
+      "slug": "notice",
+      "id": "t_fde7aac8a87c4018b541b0758735e518",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:notice",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/notice",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "part",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "part",
+      "altLabels": [],
+      "scopeNote": "Major thematic division.",
+      "status": "active",
+      "relations": [],
+      "links": [
+        {
+          "uri": "http://idpf.org/epub/vocab/structure/#part",
+          "match": "closeMatch"
+        },
+        {
+          "uri": "https://www.w3.org/TR/dpub-aria-1.1/#doc-part",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:part",
+        "iasp:delivery-role/part"
+      ],
+      "slug": "part",
+      "id": "t_33992546cf7b40618ca21b1dccc3d355",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:part",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/part",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "prelude",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "prelude",
+      "altLabels": [],
+      "scopeNote": "Build extension (note.prelude). An opening note that prepares the reader for what follows.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "opposite",
+          "target": "t_08edc39ed64149dd90d8ca4f3929271d"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_97f29471b95f46a5a477ad88f323fdfc"
+      ],
+      "aliases": [
+        "urn:iasp:concept:prelude",
+        "iasp:modifier/reader-navigation/prelude"
+      ],
+      "slug": "prelude",
+      "id": "t_fa69f04676564077823301b357ff438d",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:prelude",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-navigation/prelude",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "provocation",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "provocation",
+      "altLabels": [],
+      "scopeNote": "Intentionally unsettling prompt.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:provocation",
+        "iasp:modifier/argument-and-reasoning/provocation"
+      ],
+      "slug": "provocation",
+      "id": "t_685cd2e3d4f94d06a3470ab4fdbf8995",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:provocation",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/provocation",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "qualification",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "qualification",
+      "altLabels": [],
+      "scopeNote": "Limitation or nuance.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_1d8f2d9b271f4a96b73ccd63e18497e4"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:qualification",
+        "iasp:modifier/argument-and-reasoning/qualification"
+      ],
+      "slug": "qualification",
+      "id": "t_877829c033324a7ea0c036d93809ade7",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:qualification",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/qualification",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [],
+      "formerSlugs": [],
+      "label": "reader navigation",
+      "altLabels": [],
+      "scopeNote": "Modifiers that orient the reader within the book: where they are, where they came from, where they are going. Not a heading in IASP Core; groups build-supported note variants.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_c987eb2c3eed4eb884b36730e74cfc51"
+      ],
+      "aliases": [
+        "urn:iasp:concept:reader-navigation",
+        "iasp:modifier/reader-navigation"
+      ],
+      "slug": "reader-navigation",
+      "id": "t_97f29471b95f46a5a477ad88f323fdfc",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:reader-navigation",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-navigation",
+      "depth": 1,
+      "narrower": [
+        "t_08edc39ed64149dd90d8ca4f3929271d",
+        "t_1f93faa2fd15444bac6e97d59439fd90",
+        "t_543eb257ebc74f5db8db810a27656e71",
+        "t_7b0ce19f57f445a7ba17d422ed95e75f",
+        "t_fa69f04676564077823301b357ff438d"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [],
+      "formerSlugs": [],
+      "label": "reader signals and stance",
+      "altLabels": [],
+      "scopeNote": "Modifiers that alert the reader or declare the author's epistemic or moral stance.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_c987eb2c3eed4eb884b36730e74cfc51"
+      ],
+      "aliases": [
+        "urn:iasp:concept:reader-signals-and-stance",
+        "iasp:modifier/reader-signals-and-stance"
+      ],
+      "slug": "reader-signals-and-stance",
+      "id": "t_74a4d702169c4e4a9a1a253418507316",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:reader-signals-and-stance",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance",
+      "depth": 1,
+      "narrower": [
+        "t_1d8f2d9b271f4a96b73ccd63e18497e4",
+        "t_3f4903aae74f45428c66b9f1b8775f2d",
+        "t_4f3deded360f4228866b5938ac6ca8d6",
+        "t_5c76a5461a724ea39a8df78fcecfd589",
+        "t_893b091ab6564e4784a5f9e86471b6de",
+        "t_a170daebdf22499abac275420edda492",
+        "t_b99cf7351850411688d6bd75fe139ea0",
+        "t_cd00dab4ac0c488eaac2603f99fb4b3b",
+        "t_ea5f2b7ef8294af2ac1cbeca34dbc40b",
+        "t_f06cc76f70654e67994f218f0dac857a",
+        "t_fde7aac8a87c4018b541b0758735e518"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "reflection",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "reflection",
+      "altLabels": [],
+      "scopeNote": "Interpretive or contemplative pause. Example: bridge.reflection.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_91f7017a4cac45cc9a0dc30fdce82ba9"
+        },
+        {
+          "type": "related",
+          "target": "t_f06cc76f70654e67994f218f0dac857a"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:reflection",
+        "iasp:modifier/argument-and-reasoning/reflection"
+      ],
+      "slug": "reflection",
+      "id": "t_feb5d7c8a0cb4a459f990bcd421a7cd1",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:reflection",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/reflection",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "reflexive",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "reflexive",
+      "altLabels": [
+        "self-scrutiny"
+      ],
+      "scopeNote": "Build extension (note.reflexive, slate ⟲ badge). Reflexive cautions: the author or reader turning the analysis on themselves.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_feb5d7c8a0cb4a459f990bcd421a7cd1"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:reflexive",
+        "iasp:modifier/reader-signals-and-stance/reflexive"
+      ],
+      "slug": "reflexive",
+      "id": "t_f06cc76f70654e67994f218f0dac857a",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:reflexive",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/reflexive",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "responsibility",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "responsibility",
+      "altLabels": [
+        "accountability"
+      ],
+      "scopeNote": "Build extension (note.responsibility, amber ⚖ badge). Responsibility or accountability framing.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:responsibility",
+        "iasp:modifier/reader-signals-and-stance/responsibility"
+      ],
+      "slug": "responsibility",
+      "id": "t_4f3deded360f4228866b5938ac6ca8d6",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:responsibility",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/responsibility",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "scope",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "scope",
+      "altLabels": [
+        "scope note"
+      ],
+      "scopeNote": "Build extension (note.scope, warm copper ◎ badge). Delimits boundaries, applicability or evidentiary thresholds.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_1d8f2d9b271f4a96b73ccd63e18497e4"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:scope",
+        "iasp:modifier/reader-signals-and-stance/scope"
+      ],
+      "slug": "scope",
+      "id": "t_3f4903aae74f45428c66b9f1b8775f2d",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:scope",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/scope",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "section",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "section",
+      "altLabels": [],
+      "scopeNote": "Subdivision within a chapter.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:section",
+        "iasp:delivery-role/section"
+      ],
+      "slug": "section",
+      "id": "t_6d343b31aa3e49db9db914780fd1a0d1",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:section",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/section",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "series",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "series",
+      "altLabels": [],
+      "scopeNote": "Optional super-division above parts; use only if helpful. Naming is configurable (see Part Naming).",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:series",
+        "iasp:delivery-role/series"
+      ],
+      "slug": "series",
+      "id": "t_ecb43937b3c148bfaa3c4f0ae15cf70e",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:series",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/series",
+      "depth": 1,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "sidebar",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        },
+        {
+          "value": "aside",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "sidebar",
+      "altLabels": [
+        "aside",
+        "sidebar-block"
+      ],
+      "scopeNote": "Optional digression or parallel track. Common compositions: sidebar.example, sidebar.background. Builds map it to epub:type aside and ARIA role complementary; .sidebar-block gives the full-width badge form.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_765a3b3d98024267967bbb9df853c173"
+        }
+      ],
+      "links": [
+        {
+          "uri": "https://www.w3.org/TR/wai-aria-1.2/#complementary",
+          "match": "closeMatch"
+        }
+      ],
+      "broader": [
+        "t_f94e125cef604756a5cbc8b6e7775444"
+      ],
+      "aliases": [
+        "urn:iasp:concept:sidebar",
+        "iasp:delivery-role/sidebar"
+      ],
+      "slug": "sidebar",
+      "id": "t_1e6ad54c49264bb08ae31fb1891d8057",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:sidebar",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/sidebar",
+      "depth": 1,
+      "narrower": [
+        "t_40f49527991e4fd588af58c7ca691d10"
+      ]
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "sidebar-inline",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "sidebar-inline",
+      "altLabels": [
+        "inline sidebar"
+      ],
+      "scopeNote": "Build extension. A sidebar that sits inside the prose, with a glyph on its first line rather than a badge header.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_1e6ad54c49264bb08ae31fb1891d8057"
+      ],
+      "aliases": [
+        "urn:iasp:concept:sidebar-inline",
+        "iasp:delivery-role/sidebar/sidebar-inline"
+      ],
+      "slug": "sidebar-inline",
+      "id": "t_40f49527991e4fd588af58c7ca691d10",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:sidebar-inline",
+      "created": 342,
+      "changed": 342,
+      "path": "delivery-role/sidebar/sidebar-inline",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "synthesis",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "synthesis",
+      "altLabels": [],
+      "scopeNote": "Integration of ideas. As a note variant (note.synthesis, green ⊕ badge): a block that integrates multiple strands into a single takeaway.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_fe34bd4daedd41fba0d73d4e5327237e"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:synthesis",
+        "iasp:modifier/argument-and-reasoning/synthesis"
+      ],
+      "slug": "synthesis",
+      "id": "t_74ff3c695025423ea5665af81b0b2347",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:synthesis",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/synthesis",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "thesis",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "thesis",
+      "altLabels": [],
+      "scopeNote": "Central claim. Example: section.thesis, to mark a major move.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_11363627d0d546139891f5b3288f9e86"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_f735e6f9abf949f0bfd0cf4b7d124004"
+      ],
+      "aliases": [
+        "urn:iasp:concept:thesis",
+        "iasp:modifier/argument-and-reasoning/thesis"
+      ],
+      "slug": "thesis",
+      "id": "t_09b29504327e42c1be88f167af855f86",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:thesis",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/argument-and-reasoning/thesis",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "transition",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "transition",
+      "altLabels": [],
+      "scopeNote": "Build extension (note.transition, inline ⇥ glyph). Hand-off moments, scene shifts or narrative pivots.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_13facc56e9fe47099a6c2fa086caf7d7"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_97f29471b95f46a5a477ad88f323fdfc"
+      ],
+      "aliases": [
+        "urn:iasp:concept:transition",
+        "iasp:modifier/reader-navigation/transition"
+      ],
+      "slug": "transition",
+      "id": "t_543eb257ebc74f5db8db810a27656e71",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:transition",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-navigation/transition",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "uncertainty",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "uncertainty",
+      "altLabels": [],
+      "scopeNote": "Epistemic humility.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:uncertainty",
+        "iasp:modifier/reader-signals-and-stance/uncertainty"
+      ],
+      "slug": "uncertainty",
+      "id": "t_a170daebdf22499abac275420edda492",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:uncertainty",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/uncertainty",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "usage",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "usage",
+      "altLabels": [
+        "how to apply this"
+      ],
+      "scopeNote": "Build extension (note.usage, steel-blue ⚙ badge). Guidance on how to apply a framework or idea.",
+      "status": "active",
+      "relations": [],
+      "links": [],
+      "broader": [
+        "t_28fd414ff59c4c66a4bd560b54b6afcf"
+      ],
+      "aliases": [
+        "urn:iasp:concept:usage",
+        "iasp:modifier/exposition-and-support/usage"
+      ],
+      "slug": "usage",
+      "id": "t_77dd87621c5b4c5694db26c6f3bc69ae",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:usage",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/exposition-and-support/usage",
+      "depth": 2,
+      "narrower": []
+    },
+    {
+      "replacedBy": [],
+      "notations": [
+        {
+          "value": "warning",
+          "datatype": "urn:iasp:datatype:pandoc-class"
+        }
+      ],
+      "formerSlugs": [],
+      "label": "warning",
+      "altLabels": [],
+      "scopeNote": "Risk, harm or moral alert. As a note variant (note.warning) it renders with a warning badge.",
+      "status": "active",
+      "relations": [
+        {
+          "type": "related",
+          "target": "t_cd00dab4ac0c488eaac2603f99fb4b3b"
+        },
+        {
+          "type": "related",
+          "target": "t_893b091ab6564e4784a5f9e86471b6de"
+        }
+      ],
+      "links": [],
+      "broader": [
+        "t_74a4d702169c4e4a9a1a253418507316"
+      ],
+      "aliases": [
+        "urn:iasp:concept:warning",
+        "iasp:modifier/reader-signals-and-stance/warning"
+      ],
+      "slug": "warning",
+      "id": "t_ea5f2b7ef8294af2ac1cbeca34dbc40b",
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:concept:warning",
+      "created": 342,
+      "changed": 342,
+      "path": "modifier/reader-signals-and-stance/warning",
+      "depth": 2,
+      "narrower": []
+    }
+  ],
+  "sets": [
+    {
+      "slug": "delivery-order",
+      "label": "Delivery roles in reading order",
+      "description": "IASP Core delivery roles in the order Semantic Vocabulary §6 lists them: framing, structural divisions from largest to smallest, connective and parallel text, then ancillary material.",
+      "owner": "iasp",
+      "kind": "profile",
+      "ordered": true,
+      "members": [
+        "t_b211a8757c1c4246a1d433c9db9280dd",
+        "t_ecb43937b3c148bfaa3c4f0ae15cf70e",
+        "t_33992546cf7b40618ca21b1dccc3d355",
+        "t_0a9720a3797149558a057770aa6ebb90",
+        "t_6d343b31aa3e49db9db914780fd1a0d1",
+        "t_91f7017a4cac45cc9a0dc30fdce82ba9",
+        "t_13facc56e9fe47099a6c2fa086caf7d7",
+        "t_1e6ad54c49264bb08ae31fb1891d8057",
+        "t_2e1568675fd44e38ae2354175c8047e8",
+        "t_4dc73dc81bee44da93af108792807b61",
+        "t_e20589486eb04fcabf6d4e0fdcdcea7a",
+        "t_c86f78d5249943bf84a16c0a501e333d"
+      ],
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:set:delivery-order",
+      "id": "s_74b73cd0f8f4411db8607107cdc7a3ed",
+      "created": 343,
+      "changed": 343
+    },
+    {
+      "slug": "core",
+      "label": "IASP Core",
+      "description": "The terms defined in IASP Core (Semantic Vocabulary §6–7): twelve delivery roles and twenty-one modifiers. Everything else in the scheme is a build extension or a grouping concept.",
+      "owner": "iasp",
+      "kind": "profile",
+      "ordered": false,
+      "members": [
+        "t_b211a8757c1c4246a1d433c9db9280dd",
+        "t_ecb43937b3c148bfaa3c4f0ae15cf70e",
+        "t_33992546cf7b40618ca21b1dccc3d355",
+        "t_0a9720a3797149558a057770aa6ebb90",
+        "t_6d343b31aa3e49db9db914780fd1a0d1",
+        "t_91f7017a4cac45cc9a0dc30fdce82ba9",
+        "t_13facc56e9fe47099a6c2fa086caf7d7",
+        "t_1e6ad54c49264bb08ae31fb1891d8057",
+        "t_2e1568675fd44e38ae2354175c8047e8",
+        "t_4dc73dc81bee44da93af108792807b61",
+        "t_e20589486eb04fcabf6d4e0fdcdcea7a",
+        "t_c86f78d5249943bf84a16c0a501e333d",
+        "t_09b29504327e42c1be88f167af855f86",
+        "t_11363627d0d546139891f5b3288f9e86",
+        "t_a44406b4c6804ed1b84a2487a83648a4",
+        "t_877829c033324a7ea0c036d93809ade7",
+        "t_1d8f2d9b271f4a96b73ccd63e18497e4",
+        "t_f993fed5d42848a19b195f918e367805",
+        "t_74ff3c695025423ea5665af81b0b2347",
+        "t_feb5d7c8a0cb4a459f990bcd421a7cd1",
+        "t_685cd2e3d4f94d06a3470ab4fdbf8995",
+        "t_8215118502474e90aa8a3112766ad6ff",
+        "t_97201cc5688443c9a95348336829c9e5",
+        "t_70d399bb0b0446239e23b1cc885ff9f4",
+        "t_f5638fdcfc89403b93d317c246ff969b",
+        "t_86df5bd9e7a349cd87b90f740de97158",
+        "t_098e663d694c428ea018d730152ae286",
+        "t_598135e26b8542b09a9cd40a2c0fa06d",
+        "t_ea5f2b7ef8294af2ac1cbeca34dbc40b",
+        "t_cd00dab4ac0c488eaac2603f99fb4b3b",
+        "t_fde7aac8a87c4018b541b0758735e518",
+        "t_5c76a5461a724ea39a8df78fcecfd589",
+        "t_a170daebdf22499abac275420edda492"
+      ],
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:set:core",
+      "id": "s_fe448844625444089c815fe24fe8d5e6",
+      "created": 343,
+      "changed": 343
+    },
+    {
+      "slug": "note-variants",
+      "label": "Note variants",
+      "description": "Modifiers the build recognises after note (note.<variant>), each with its own box environment and badge or glyph: the keys of NOTE_VARIANT_CONFIG in iasp_tooling/lua/iasp-semantics.lua. Other modifiers composed with note still render, as a plain note box.",
+      "owner": "iasp",
+      "kind": "profile",
+      "ordered": false,
+      "members": [
+        "t_13facc56e9fe47099a6c2fa086caf7d7",
+        "t_543eb257ebc74f5db8db810a27656e71",
+        "t_6adfd89ae7da4cd194bcdeecdfd0a49c",
+        "t_74ff3c695025423ea5665af81b0b2347",
+        "t_fe34bd4daedd41fba0d73d4e5327237e",
+        "t_f06cc76f70654e67994f218f0dac857a",
+        "t_d3054f2c6e564f6fb351059b297b0403",
+        "t_598135e26b8542b09a9cd40a2c0fa06d",
+        "t_fcc2ca6241094e6a8d8136c6db29be1f",
+        "t_0a223ba1ff4046af8932f68441da34c6",
+        "t_77dd87621c5b4c5694db26c6f3bc69ae",
+        "t_0f06c8edfc7947f5b76d9254bd8eb40d",
+        "t_3b0a1a8df7fe416d8f11bf40f31e6b39",
+        "t_ab752d3f0f0d43e4a11fcae1b55f015d",
+        "t_ea5f2b7ef8294af2ac1cbeca34dbc40b",
+        "t_893b091ab6564e4784a5f9e86471b6de",
+        "t_b99cf7351850411688d6bd75fe139ea0",
+        "t_3f4903aae74f45428c66b9f1b8775f2d",
+        "t_4f3deded360f4228866b5938ac6ca8d6",
+        "t_1f93faa2fd15444bac6e97d59439fd90",
+        "t_7b0ce19f57f445a7ba17d422ed95e75f",
+        "t_fa69f04676564077823301b357ff438d",
+        "t_08edc39ed64149dd90d8ca4f3929271d"
+      ],
+      "scheme": "iasp",
+      "sourceUri": "urn:iasp:set:note-variants",
+      "id": "s_5f3ff364cb3a4caa8874ee5905f9ac43",
+      "created": 343,
+      "changed": 343
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+import { readFileSync } from "node:fs";
+import http from "node:http";
+import { resolve } from "node:path";
+import type { JWTVerifyGetKey } from "jose";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { type DB, PROJECT_ROOT } from "./db.js";
+import { FAVICON } from "./favicon.js";
+import { healthStatus } from "./health.js";
+import { adminPage, homePage } from "./home.js";
+import { AccessError, authorizeRequest, requestAccessConfig, type RequestAccessConfig } from "./http-access.js";
+import { VERSION, createServer } from "./mcp.js";
+import { renderDocument } from "./render.js";
+import type { TermSyncStatus } from "./terminology.js";
+
+export interface ServeOptions {
+  access?: RequestAccessConfig;
+  accessKeys?: JWTVerifyGetKey;
+  host: string;
+  port: number;
+  termSync?: () => TermSyncStatus;
+}
+
+export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
+  const access = options.access ?? requestAccessConfig(process.env, ["iasp-mcp", "iasp-mcp.localdomain"]);
+  const server = http.createServer(async (req, res) => {
+    const url = new URL(req.url ?? "/", "http://localhost");
+    try {
+      const { via } = await authorizeRequest(req, url.pathname, access, options.accessKeys);
+      const rootMcp =
+        url.pathname === "/" &&
+        via === "access" &&
+        (req.method === "POST" ||
+          req.method === "OPTIONS" ||
+          (req.method === "GET" && (req.headers.accept ?? "").includes("text/event-stream")));
+
+      if (url.pathname === "/favicon.svg") {
+        if (req.method !== "GET" && req.method !== "HEAD") {
+          return void res.writeHead(405, { allow: "GET, HEAD" }).end();
+        }
+        return void res
+          .writeHead(200, {
+            "content-type": "image/svg+xml; charset=utf-8",
+            "cache-control": "public, max-age=86400",
+            "x-content-type-options": "nosniff",
+          })
+          .end(req.method === "HEAD" ? undefined : FAVICON);
+      }
+
+      if (url.pathname === "/health") {
+        res
+          .writeHead(200, { "content-type": "application/json" })
+          .end(JSON.stringify(healthStatus(db, options.termSync)));
+        return;
+      }
+
+      if ((url.pathname === "/" && !rootMcp) || (url.pathname === "/admin" && via === "lan")) {
+        if (req.method !== "GET") return void res.writeHead(405, { allow: "GET" }).end();
+        const html =
+          url.pathname === "/admin"
+            ? adminPage(db, options.termSync)
+            : homePage(db, url.searchParams, via === "lan");
+        return void res
+          .writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" })
+          .end(html);
+      }
+
+      if (url.pathname === "/demo/html" || url.pathname === "/demo/ghost" || url.pathname === "/demo/pdf") {
+        if (req.method !== "GET") return void res.writeHead(405, { allow: "GET" }).end();
+        const fmt = url.pathname === "/demo/html" ? "html" : url.pathname === "/demo/ghost" ? "ghost" : "pdf";
+        const rendered = renderDocument({
+          source: "demo",
+          formats: [fmt],
+          returnContent: fmt !== "pdf",
+        });
+        const artifact = rendered.artifacts[0];
+        if (fmt === "html") {
+          return void res
+            .writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" })
+            .end(artifact.content);
+        }
+        if (fmt === "ghost") {
+          return void res
+            .writeHead(200, { "content-type": "text/markdown; charset=utf-8", "cache-control": "no-store" })
+            .end(artifact.content);
+        }
+        const pdfBytes = readFileSync(resolve(PROJECT_ROOT, artifact.output_path));
+        return void res
+          .writeHead(200, {
+            "content-type": "application/pdf",
+            "content-disposition": 'inline; filename="essay-on-attentive-reading.pdf"',
+            "cache-control": "no-store",
+          })
+          .end(pdfBytes);
+      }
+
+      if (url.pathname !== "/mcp" && !rootMcp) {
+        res.writeHead(404).end();
+        return;
+      }
+      if (req.method === "OPTIONS") {
+        res.writeHead(204).end();
+        return;
+      }
+      if (req.method !== "POST") {
+        res
+          .writeHead(405, { allow: "POST, OPTIONS", "content-type": "application/json" })
+          .end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32000, message: "Method not allowed." }, id: null }));
+        return;
+      }
+
+      const mcp = createServer(db);
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+      res.on("close", () => {
+        void transport.close();
+        void mcp.close();
+      });
+      await mcp.connect(transport);
+      await transport.handleRequest(req, res);
+    } catch (error) {
+      if (error instanceof AccessError) {
+        if (!res.headersSent) {
+          res
+            .writeHead(error.status, { "content-type": "application/json", "cache-control": "no-store" })
+            .end(JSON.stringify({ error: error.message }));
+        }
+        return;
+      }
+      console.error(error);
+      if (!res.headersSent) res.writeHead(500).end();
+    }
+  });
+
+  return new Promise((resolveServer) =>
+    server.listen(options.port, options.host, () => {
+      const a = server.address();
+      console.error(
+        `iasp-mcp ${VERSION} listening on ${typeof a === "object" && a ? `${a.address}:${a.port}` : options.port} (/mcp, /health, /)`,
+      );
+      resolveServer(server);
+    }),
+  );
+}
+
+export async function serveStdio(db: DB): Promise<void> {
+  await createServer(db).connect(new StdioServerTransport());
+}

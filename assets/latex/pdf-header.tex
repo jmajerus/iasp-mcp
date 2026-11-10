@@ -1,0 +1,877 @@
+% pdf-header.tex
+% Extra styling for Pandoc-generated PDFs
+% (included via --include-in-header)
+
+\makeatletter
+\@ifundefined{savenotes}{}{%%
+  \let\savenotes\relax%%
+  \let\endsavenotes\relax%%
+}
+\makeatother
+
+% Hyphenation and line-breaking controls
+% Reduce excessive hyphenation for better readability
+\hyphenpenalty=500       % Default is 50 (lower = more hyphenation)
+\exhyphenpenalty=500     % Penalty for breaking already-hyphenated words
+\tolerance=1000          % Default is 200 (higher = more tolerance for loose spacing)
+\emergencystretch=3em    % Allow extra stretch to avoid overfull boxes
+
+\usepackage{needspace}
+\usepackage{fontspec}
+\usepackage{newunicodechar}
+\usepackage{fancyvrb}
+\usepackage{fvextra} % allow breaklines for Pandoc's Verbatim blocks
+\usepackage{framed}
+\usepackage{enumitem}
+\usepackage{ltablex}  % Extends longtable with tabularx features
+\fvset{breaklines=true,breakanywhere=true}
+% Alias the standard \begin{verbatim} environment to fancyvrb's \begin{Verbatim}
+% so that it also inherits breaklines=true from \fvset above.  Without this,
+% indented code blocks (which Pandoc renders as \begin{verbatim}) silently
+% overflow the page margin on long single-line content.
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{}
+\csname tracinglostchars\endcsname=1
+
+% --------------------------------------------------
+% Force all longtable columns to wrap text properly
+% Redefine column types to use ragged-right paragraph columns
+% --------------------------------------------------
+\usepackage{array}
+\renewcommand{\arraystretch}{1.2}
+% Make 'l' columns behave as wrapping paragraph columns in longtable
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+% Default table font slightly smaller for better fit
+\AtBeginEnvironment{longtable}{\small}
+
+\providecommand{\BodyFontFamily}{TeX Gyre Pagella}
+\providecommand{\HeadingFontFamily}{TeX Gyre Pagella}
+\providecommand{\MonoFontFamily}{DejaVu Sans Mono}
+\providecommand{\MonoFontFallbackA}{Inconsolata}
+\providecommand{\MonoFontFallbackB}{TeX Gyre Cursor}
+\providecommand{\ScreenGeometryOptions}{paperwidth=6in, paperheight=9in, margin=1.1in, twoside=false}
+\providecommand{\PrintGeometryOptions}{paperwidth=6in, paperheight=9in, left=0.75in, right=0.375in, top=0.5in, bottom=0.5in, twoside=false}
+
+% Provide fallback Highlighting/Shaded environments if Pandoc's template omits them
+\makeatletter
+\@ifundefined{VerbBar}{\newcommand{\VerbBar}{|}}{}
+\@ifundefined{VERB}{\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}}{}
+\@ifundefined{Highlighting}{%
+  \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+}{}
+\@ifundefined{Shaded}{%
+  \newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+}{}
+ \@ifundefined{abstract}{%
+   \newenvironment{abstract}{%
+     \begin{quote}
+     \begingroup\centering\bfseries Abstract\par\endgroup\smallskip
+   }{%
+     \end{quote}
+   }
+ }{}
+\makeatother
+
+% Reconfigure Pandoc's Highlighting environment so literal includes wrap lines
+\RecustomVerbatimEnvironment{Highlighting}{Verbatim}{%
+  commandchars=\\\{\},% keep Pandoc's command chars intact
+  breaklines=true,% wrap long lines instead of overflowing the margin
+  breakanywhere=true
+}
+\defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase,Renderer=Harfbuzz}
+
+% --------------------------------------------------
+% TOC list spacing (PDF rendering)
+% --------------------------------------------------
+\newenvironment{tocblock}{%
+  \begingroup%
+  \setlist[itemize,1]{label={},labelsep=0pt,leftmargin=2.1em,itemindent=0pt,listparindent=0pt,align=left,itemsep=0pt,topsep=0.2em,parsep=0pt}%
+  \setlist[itemize,2]{label=\textbullet,labelsep=0.35em,labelwidth=1em,leftmargin=2.6em,itemindent=0pt,align=left,itemsep=0pt,topsep=0.2em,parsep=0pt}%
+  \setlist[itemize,3]{label=\textbullet,labelsep=0.35em,labelwidth=1em,leftmargin=3.4em,itemindent=0pt,align=left,itemsep=0pt,topsep=0.2em,parsep=0pt}%
+  \setlist[enumerate,1]{labelsep=0.35em,labelwidth=2.1em,leftmargin=2.6em,align=right,itemindent=0pt,itemsep=0pt,topsep=0.2em,parsep=0pt}%
+  \setlist[enumerate,2]{labelsep=0.35em,labelwidth=1.6em,leftmargin=2.9em,align=right,itemindent=0pt,itemsep=0pt,topsep=0.2em,parsep=0pt}%
+  \setlist[enumerate,3]{labelsep=0.35em,labelwidth=1.6em,leftmargin=3.7em,align=right,itemindent=0pt,itemsep=0pt,topsep=0.2em,parsep=0pt}%
+}{\endgroup}
+
+% --------------------------------------------------
+% PDF mode switching: 'print' vs 'screen'
+% --------------------------------------------------
+\usepackage{ifthen}
+\usepackage{etoolbox}
+
+\providecommand{\RenderGrayscaleScreen}{0}
+\providecommand{\RenderGrayscalePrint}{0}
+\providecommand{\BodyRunningHeadersEnabled}{0}
+\providecommand{\AppendixRunningHeadersEnabled}{0}
+\providecommand{\RunningHeaderScope}{chapter}
+\providecommand{\AppendixRunningHeaderScope}{chapter}
+
+% --------------------------------------------------
+% Font configuration (XeLaTeX)
+% --------------------------------------------------
+\newif\ifiaspMonoFontChosen
+\iaspMonoFontChosenfalse
+
+\newcommand{\iaspTrySetMonoFont}[1]{%%
+  \ifiaspMonoFontChosen
+  \else
+    \IfFontExistsTF{#1}{%%
+      \setmonofont{#1}%%
+      \iaspMonoFontChosentrue%%
+    }{}
+  \fi
+}
+
+\newcommand{\iaspSetMonospacedFont}{%%
+  \iaspMonoFontChosenfalse%%
+  \iaspTrySetMonoFont{\MonoFontFamily}%%
+  \ifiaspMonoFontChosen
+  \else
+    \PackageWarningNoLine{iasp-fonts}{Mono font '\MonoFontFamily' missing; trying fallbacks.}%%
+    \iaspTrySetMonoFont{\MonoFontFallbackA}%%
+    \iaspTrySetMonoFont{\MonoFontFallbackB}%%
+  \fi
+  \ifiaspMonoFontChosen
+  \else
+    \PackageWarningNoLine{iasp-fonts}{No configured mono font found; falling back to 'Latin Modern Mono'.}%%
+    \setmonofont{Latin Modern Mono}%%
+  \fi
+}
+
+\setmainfont{\BodyFontFamily}
+\newfontfamily\HeadingFont{\HeadingFontFamily}
+\iaspSetMonospacedFont
+
+
+\newcommand{\setnoteglyphfont}{%
+  \IfFontExistsTF{Noto Color Emoji}{%
+    \newfontfamily\noteglyphfont{Noto Color Emoji}[Renderer=Harfbuzz,Scale=MatchLowercase]%
+  }{%
+    \IfFontExistsTF{Noto Emoji}{%
+      \newfontfamily\noteglyphfont{Noto Emoji}[Renderer=Harfbuzz,Scale=MatchLowercase]%
+    }{%
+      \IfFontExistsTF{Symbola}{%
+        \newfontfamily\noteglyphfont{Symbola}[Scale=MatchLowercase]%
+      }{%
+        \newfontfamily\noteglyphfont{DejaVu Sans}[Scale=MatchLowercase]%
+      }%
+    }%
+  }%
+}
+\setnoteglyphfont
+
+\newcommand{\setsymbolfont}{%
+  \IfFontExistsTF{Noto Sans Symbols2}{%
+    \newfontfamily\symbolfont{Noto Sans Symbols2}[Scale=MatchLowercase]%
+  }{%
+    \IfFontExistsTF{Noto Sans Symbols}{%
+      \newfontfamily\symbolfont{Noto Sans Symbols}[Scale=MatchLowercase]%
+    }{%
+      \IfFontExistsTF{DejaVu Sans}{%
+        \newfontfamily\symbolfont{DejaVu Sans}[Scale=MatchLowercase]%
+      }{%
+        \newfontfamily\symbolfont{Symbola}[Scale=MatchLowercase]%
+      }%
+    }%
+  }%
+}
+\setsymbolfont
+
+% Ensure U+25D0 (◐) renders from a symbol-capable font
+\newunicodechar{◐}{{\symbolfont◐}}
+
+\newcommand{\setcheckboxfont}{%
+  \IfFontExistsTF{Libertinus Serif}{%
+    \newfontfamily\checkboxfont{Libertinus Serif}[Scale=MatchLowercase]%
+  }{%
+    \IfFontExistsTF{Libertinus Serif Regular}{%
+      \newfontfamily\checkboxfont{Libertinus Serif Regular}[Scale=MatchLowercase]%
+    }{%
+      \IfFontExistsTF{STIX Two Text}{%
+        \newfontfamily\checkboxfont{STIX Two Text}[Scale=MatchLowercase]%
+      }{%
+        \newfontfamily\checkboxfont{DejaVu Sans}[Scale=MatchLowercase]%
+      }%
+    }%
+  }%
+}
+\setcheckboxfont
+
+\newcommand{\emojiFallback}[1]{{\noteglyphfont\symbol{#1}}}
+\newunicodechar{📺}{\emojiFallback{"1F4FA}}
+\newunicodechar{🌐}{\emojiFallback{"1F310}}
+\newunicodechar{📘}{\emojiFallback{"1F4D8}}
+\newunicodechar{⭐}{\emojiFallback{"2B50}}
+\newunicodechar{🗒}{\emojiFallback{"1F5D2}}   % spiral notepad
+\newunicodechar{📊}{\emojiFallback{"1F4CA}}   % bar chart
+\newunicodechar{🐣}{\emojiFallback{"1F423}}   % hatching chick
+\newunicodechar{☐}{{\checkboxfont\symbol{"2610}}}
+\newunicodechar{☑}{{\checkboxfont\symbol{"2611}}}
+
+% Note variant glyphs - fallback to noteglyphfont when encountered in prose
+\newunicodechar{💡}{\emojiFallback{"1F4A1}}   % idea
+\newunicodechar{🔍}{\emojiFallback{"1F50D}}   % diagnostic
+\newunicodechar{⇥}{{\noteglyphfont ⇥}}        % transition
+\newunicodechar{⚙}{{\noteglyphfont ⚙}}        % usage
+\newunicodechar{⚖}{{\noteglyphfont ⚖}}        % responsibility
+\newunicodechar{⟲}{{\noteglyphfont ⟲}}        % reflexive
+\newunicodechar{⇢}{{\noteglyphfont ⇢}}        % navigation
+\newunicodechar{✕}{{\noteglyphfont ✕}}        % misuse
+\newunicodechar{◉}{{\noteglyphfont ◉}}        % context
+\newunicodechar{◎}{{\noteglyphfont ◎}}        % scope
+\newunicodechar{⊢}{{\noteglyphfont ⊢}}        % methodology
+\newunicodechar{⊕}{{\noteglyphfont ⊕}}        % synthesis
+\newunicodechar{◊}{{\noteglyphfont ◊}}        % disclosure
+\newunicodechar{⇆}{{\noteglyphfont ⇆}}        % contrast
+\newunicodechar{∎}{{\noteglyphfont ∎}}        % closing
+\newunicodechar{⟷}{{\noteglyphfont ⟷}}        % bridge
+\newunicodechar{↗}{{\noteglyphfont ↗}}        % breadcrumb
+\newunicodechar{⁂}{{\noteglyphfont ⁂}}        % insight
+\newunicodechar{※}{{\noteglyphfont ※}}        % warning
+\newunicodechar{∴}{{\noteglyphfont ∴}}        % note (default)
+\newunicodechar{∞}{{\noteglyphfont ∞}}        % integration
+
+\newcommand{\sectionheadingglyph}[1]{%%
+  \llap{{\noteglyphfont #1}\hspace{0.6em}}%%
+}
+
+\newcommand{\collectionheadingglyph}[1]{%%
+  \llap{{\noteglyphfont #1}\hspace{0.35em}}%% tighter hang for collection-level glyphs
+}
+
+% In print mode, glyphs must NOT hang into the gutter (KDP margin enforcement).
+% Redefine after isprint is known; \AtBeginDocument ensures it overrides any
+% later redefinitions from included packages.
+\newcommand{\iaspRedefineGlyphMacrosForPrint}{%%
+  \renewcommand{\sectionheadingglyph}[1]{%%
+    {\noteglyphfont ##1}\hspace{0.4em}%%
+  }%%
+  \renewcommand{\collectionheadingglyph}[1]{%%
+    {\noteglyphfont ##1}\hspace{0.3em}%%
+  }%%
+}
+
+% Pandoc will set \pdfmode via --variable=pdfmode:MODE or metadata.
+% We interpret that into booleans for use below. If \pdfmode is
+% undefined or not 'print', we default to 'screen'.
+
+\newboolean{isprint}
+\newboolean{isscreen}
+\newif\ifiaspinappendixmode
+\iaspinappendixmodefalse
+\newif\ifiaspChapterMarkSeen
+\iaspChapterMarkSeenfalse
+
+% default to screen
+\setboolean{isprint}{false}
+\setboolean{isscreen}{true}
+
+% If the user specified pdfmode=print, flip the flags.
+\ifdefined\pdfmode
+  \ifthenelse{\equal{\pdfmode}{print}}{%%
+    \setboolean{isprint}{true}%%
+    \setboolean{isscreen}{false}%%
+  }{}
+\fi
+
+\newboolean{rendergrayscale}
+\setboolean{rendergrayscale}{false}
+
+\ifthenelse{\boolean{isprint}}{%%
+  \ifthenelse{\equal{\RenderGrayscalePrint}{1}}{%%
+    \setboolean{rendergrayscale}{true}%%
+  }{}
+}{%%
+  \ifthenelse{\equal{\RenderGrayscaleScreen}{1}}{%%
+    \setboolean{rendergrayscale}{true}%%
+  }{}
+}
+
+% --------------------------------------------------
+% Font size reduction for KDP print builds
+% --------------------------------------------------
+% Apply 9pt font in print mode to reduce pagination for KDP's 828-page limit
+% Use \AtBeginDocument to ensure it's applied after all packages have loaded
+\ifthenelse{\boolean{isprint}}{%%
+  \AtBeginDocument{%%
+    \renewcommand{\normalsize}{\fontsize{9pt}{11pt}\selectfont}%%
+    \renewcommand{\small}{\fontsize{8pt}{9.5pt}\selectfont}%%
+    \renewcommand{\footnotesize}{\fontsize{7.5pt}{9pt}\selectfont}%%
+    \renewcommand{\large}{\fontsize{10.5pt}{12.5pt}\selectfont}%%
+    \renewcommand{\Large}{\fontsize{12pt}{14pt}\selectfont}%%
+    \renewcommand{\LARGE}{\fontsize{14pt}{17pt}\selectfont}%%
+    \renewcommand{\huge}{\fontsize{17pt}{20pt}\selectfont}%%
+    \renewcommand{\Huge}{\fontsize{20pt}{24pt}\selectfont}%%
+    \normalsize  %% Apply immediately
+    \iaspRedefineGlyphMacrosForPrint  %% Inline glyphs: no llap into gutter
+  }%%
+}{}
+
+
+
+% --------------------------------------------------
+% Page layout
+% --------------------------------------------------
+% Note: geometry package is loaded by Pandoc's template with options
+% passed via --variable=geometry: in build_book.py
+% The \PrintGeometryOptions and \ScreenGeometryOptions are kept for reference
+% but no longer used directly
+\usepackage{microtype} % nicer text spacing
+\usepackage{xurl}      % allow URL line-breaks at slashes, dots, etc.
+\urlstyle{same}        % keep URL font consistent with surrounding text
+\setlength{\Urlmuskip}{0mu plus 2mu} % permit additional URL break flexibility
+\makeatletter
+% Add extra safe breakpoints for long query-heavy URLs in references.
+\g@addto@macro\UrlBreaks{\do\-\do\_\do\~\do\&\do\=\do\?\do\#}
+\makeatother
+
+% --------------------------------------------------
+% Page style (headers/footers)
+% --------------------------------------------------
+\usepackage{fancyhdr}
+\newcommand{\defaultpagestylename}{fancy}
+
+\newcommand{\iaspRunningHeadFormat}[1]{\small\itshape\nouppercase{#1}}
+
+\newcommand{\iaspPartHeaderText}{}
+\newif\ifiaspParthasvalue
+\iaspParthasvaluefalse
+
+\newcommand{\iaspSetPartHeader}[1]{%%
+  \gdef\iaspPartHeaderText{#1}%%
+  \iaspParthasvaluetrue%%
+}
+
+\newcommand{\iaspClearPartHeader}{%%
+  \gdef\iaspPartHeaderText{}%%
+  \iaspParthasvaluefalse%%
+}
+
+\newif\ifiaspNextPartHeaderPending
+\iaspNextPartHeaderPendingfalse
+\newcommand{\iaspNextPartHeaderText}{}
+
+\newcommand{\iaspSetNextPartHeader}[1]{%%
+  \gdef\iaspNextPartHeaderText{#1}%%
+  \iaspNextPartHeaderPendingtrue%%
+}
+
+\newcommand{\iaspApplyNextPartHeader}{%%
+  \ifiaspNextPartHeaderPending
+    \iaspSetPartHeader{\iaspNextPartHeaderText}%%
+    \iaspNextPartHeaderPendingfalse%%
+  \fi
+}
+
+\newcommand{\iaspRunningHeadSource}{%%
+  \ifthenelse{\equal{\RunningHeaderScope}{part}}{%%
+    \ifiaspParthasvalue
+      \iaspPartHeaderText%%
+    \else
+      \leftmark%%
+    \fi
+  }{%%
+    \leftmark%%
+  }%%
+}
+
+\newcommand{\iaspAppendixRunningHeadSource}{%%
+  \ifthenelse{\equal{\AppendixRunningHeaderScope}{section}}{%%
+    \leftmark%%
+  }{%%
+    \ifiaspChapterMarkSeen
+      \iaspLastChapterMark%%
+    \else
+      \leftmark%%
+    \fi
+  }%%
+}
+
+\newcommand{\iaspRunningHeadText}{%%
+  \ifiaspinappendixmode
+    \ifnum\AppendixRunningHeadersEnabled=1 \iaspRunningHeadFormat{\iaspAppendixRunningHeadSource}\fi%%
+  \else
+    \ifnum\BodyRunningHeadersEnabled=1 \iaspRunningHeadFormat{\iaspRunningHeadSource}\fi%%
+  \fi
+}
+
+% For print, folio is at the outer margin edge; running head at the inner edge.
+%   Even (verso): folio outer-left [LE], running head inner-right [RE]
+%   Odd  (recto): running head inner-left [LO], folio outer-right [RO]
+% They occupy separate header zones with the full column width between them.
+% Footer is empty; no wasted space at the bottom.
+% For screen, keep things subdued: footer page number only,
+% and no horizontal head rule.
+\ifthenelse{\boolean{isprint}}{%%
+  \pagestyle{fancy}
+  \fancyhf{}% clear all
+  % Verso: folio at outer-left, running head at inner-right
+  \fancyhead[LE]{\small\thepage}
+  \fancyhead[RE]{\iaspRunningHeadText}
+  % Recto: running head at inner-left, folio at outer-right
+  \fancyhead[LO]{\iaspRunningHeadText}
+  \fancyhead[RO]{\small\thepage}
+  % Keep default \headrulewidth (visible horizontal line)
+}{%%
+  % Screen: minimal; running heads are optional and disabled by default
+  \pagestyle{fancy}
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \fancyhead[LE,RO]{\iaspRunningHeadText}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+\fancypagestyle{plain}{%% ensure chapter-opening pages follow the same rules
+  \fancyhf{}
+  \ifthenelse{\boolean{isprint}}{%%
+    \fancyhead[LE]{\small\thepage}%%
+    \fancyhead[RE]{\iaspRunningHeadText}%%
+    \fancyhead[LO]{\iaspRunningHeadText}%%
+    \fancyhead[RO]{\small\thepage}%%
+    \renewcommand{\headrulewidth}{0.4pt}%%
+  }{%%
+    \fancyfoot[C]{\thepage}%%
+    \fancyhead[LE,RO]{\iaspRunningHeadText}%%
+    \renewcommand{\headrulewidth}{0pt}%%
+  }
+}
+
+
+% Make sure \chaptermark exists even for 'article' class
+\providecommand{\chaptermark}[1]{}
+
+\newcommand{\iaspLastChapterMark}{}
+\newcommand{\iaspLastSectionMark}{}
+
+\newif\ifiaspChapterMarkOverridePending
+\iaspChapterMarkOverridePendingfalse
+\newcommand{\iaspChapterMarkOverrideText}{}
+
+\newcommand{\iaspSetNextChapterRunningHead}[1]{%%
+  \gdef\iaspChapterMarkOverrideText{#1}%%
+  \iaspChapterMarkOverridePendingtrue%%
+}
+
+\newcommand{\iaspSetRunningHeadNow}[1]{%%
+  \iaspSetPartHeader{#1}%%
+  \gdef\iaspLastChapterMark{\unexpanded{#1}}%%
+  \markboth{\unexpanded{#1}}{}%%
+  \iaspChapterMarkSeentrue%%
+}
+
+\newcommand{\iaspClearRunningHead}{%%
+  \gdef\iaspLastChapterMark{}%%
+  \markboth{}{}%%
+}
+
+% Use chapter titles for \leftmark (no section marks in header)
+\renewcommand{\chaptermark}[1]{%%
+  \iaspApplyNextPartHeader%% ensure deferred part headers activate after the prior page flushes
+  \ifiaspChapterMarkOverridePending%%
+    \gdef\iaspLastChapterMark{\unexpanded{\iaspChapterMarkOverrideText}}%%
+    \markboth{\unexpanded{\iaspChapterMarkOverrideText}}{}%%
+    \iaspChapterMarkOverridePendingfalse%%
+  \else%%
+    \gdef\iaspLastChapterMark{\unexpanded{#1}}%%
+    \markboth{\unexpanded{#1}}{}%%
+  \fi%%
+  \iaspChapterMarkSeentrue%%
+}
+\renewcommand{\sectionmark}[1]{%%
+  \gdef\iaspLastSectionMark{#1}%%
+  \markboth{#1}{}%%
+}
+
+% Make sure header area is tall enough
+\setlength{\headheight}{14pt}
+\setlength{\headsep}{12pt}
+
+\newcommand{\includeBannerText}{}
+\newif\ifincludeBannerActive
+\includeBannerActivefalse
+
+\newcommand{\includeBannerStripe}{%%
+  \begingroup
+  \setlength{\fboxsep}{6pt}%%
+  \colorbox{includebannerbg}{%%
+    \parbox{\dimexpr\textwidth-2\fboxsep\relax}{\centering\footnotesize\sffamily\textbf{\includeBannerText}}%%
+  }%%
+  \endgroup
+}
+
+\fancypagestyle{include-banner}{%%
+  \fancyhf{}
+  \fancyhead[C]{\includeBannerStripe}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+\newcommand{\activateIncludeBanner}[1]{%%
+  \def\includeBannerText{#1}%%
+  \includeBannerActivetrue%%
+  \pagestyle{include-banner}%%
+}
+
+\newcommand{\deactivateIncludeBanner}{%%
+  \includeBannerActivefalse%%
+  \pagestyle{\defaultpagestylename}%%
+  \def\includeBannerText{}%%
+}
+
+\newenvironment{includepagebanner}[1]{%%
+  \clearpage%% ensure bannered inserts always start on a fresh page
+  \activateIncludeBanner{#1}%%
+    \thispagestyle{include-banner}%%
+}{%%
+  \deactivateIncludeBanner%%
+}
+
+\newenvironment{includepagebannerchapter}[1]{%%
+  \activateIncludeBanner{#1}%%
+}{%%
+  \deactivateIncludeBanner%%
+}
+
+\makeatletter
+\apptocmd{\@chapter}{\ifincludeBannerActive\thispagestyle{include-banner}\fi}{}{}
+\apptocmd{\@schapter}{\ifincludeBannerActive\thispagestyle{include-banner}\fi}{}{}
+\makeatother
+
+
+
+% --------------------------------------------------
+% Part title pages: vertically offset, left-aligned, no header/footer
+% --------------------------------------------------
+\usepackage{ragged2e} % make sure this is present near the top
+
+\newenvironment{parttitlepage}{%
+  \clearpage
+  \thispagestyle{empty}% no running head / footer
+  \markboth{}{}% clear left/right marks
+  \vspace*{0.32\textheight}% push content down a bit
+  \begingroup
+  \RaggedRight% left-aligned, no justification
+}{%
+  \par
+  \endgroup
+  \clearpage
+}
+
+
+
+% --------------------------------------------------
+% Section / part / chapter formatting
+% --------------------------------------------------
+\usepackage{titlesec}
+
+% PARTS (your outer "Series"/major divisions)
+% Shown on their own page, big and centered
+\titleformat{\part}
+  [display]
+  {\centering\HeadingFont\Huge\bfseries}
+  {\partname~\thepart}
+  {1ex}
+  {}
+
+\titlespacing*{\part}
+  {0pt}   % left
+  {*6}    % before
+  {*4}    % after
+
+% CHAPTERS (your main units inside parts)
+% Adjusted for a clean, book-like start
+\titleformat{\chapter}
+  [display]
+  {\HeadingFont\LARGE\bfseries}
+  {\chaptername~\thechapter}
+  {1ex}
+  {}
+
+\titlespacing*{\chapter}
+  {0pt}   % left
+  {*4}    % before
+  {*2}    % after
+
+% SECTIONS (for your h2 / h3 hierarchy)
+\titleformat{\section}
+  {\HeadingFont\Large\bfseries}
+  {\thesection}
+  {0.5em}
+  {}
+
+\titleformat{\subsection}
+  {\HeadingFont\large\bfseries}
+  {\thesubsection}
+  {0.5em}
+  {}
+
+% --------------------------------------------------
+% Appendices
+% --------------------------------------------------
+\usepackage[toc,page]{appendix}
+
+\pretocmd{\appendix}{\iaspinappendixmodetrue}{}{}
+
+% When Pandoc/Lua filter switches to appendix mode
+% (\appendix), chapters become "Appendix A", "Appendix B", etc.
+% You can tweak the label if you like:
+% \renewcommand{\appendixname}{Appendix}
+% \renewcommand{\appendixtocname}{Appendices}
+
+% --------------------------------------------------
+% Optional: Sidebar environment for PDF
+% (we can wire your epub:type="aside" to this later)
+% --------------------------------------------------
+\usepackage{mdframed}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{booktabs}
+
+\ifthenelse{\boolean{rendergrayscale}}{%%
+  \selectcolormodel{gray}%%
+}{}
+
+
+% Sidebar background differs by mode; make it clearly visible.
+\ifthenelse{\boolean{isscreen}}{%%
+  % Screen PDF: slightly darker gray for clear on-screen contrast
+  \colorlet{sidebarbg}{gray!10}%%
+  \colorlet{calloutbg}{gray!12}%%
+  \colorlet{includebannerbg}{gray!25}%%
+}{%%
+  % Print PDF: a bit lighter, but still clearly distinct
+  \colorlet{sidebarbg}{gray!5}%%
+  \colorlet{calloutbg}{gray!6}%%
+  \colorlet{includebannerbg}{gray!18}%%
+}
+
+% Per-environment framing (kept in dedicated inputs for easy tweaking)
+\definecolor{noteboxplainbg}{HTML}{FFF9ED}
+\definecolor{noteboxplainline}{HTML}{E6C35A}
+\definecolor{noteboxbg}{HTML}{FFF6D5}
+\definecolor{noteboxline}{HTML}{D9A300}
+\definecolor{noteboxbreadcrumbbg}{HTML}{EEF5FB}
+\definecolor{noteboxbreadcrumbline}{HTML}{1D5671}
+\definecolor{noteboxwarningbg}{HTML}{FFF1E6}
+\definecolor{noteboxwarningline}{HTML}{C05621}
+\definecolor{noteboxcontrastbg}{HTML}{F4EBFF}
+\definecolor{noteboxcontrastline}{HTML}{7E3AF2}
+\definecolor{noteboxtransitionbg}{HTML}{EAF2FF}
+\definecolor{noteboxtransitionline}{HTML}{2563EB}
+\definecolor{noteboxnavigationbg}{HTML}{E6F6F7}
+\definecolor{noteboxnavigationline}{HTML}{0F6B75}
+\definecolor{noteboxbridgebg}{HTML}{F4F0FF}
+\definecolor{noteboxbridgeline}{HTML}{6F58B9}
+\definecolor{noteboxusagebg}{HTML}{EEF4FA}
+\definecolor{noteboxusageline}{HTML}{3B6EA8}
+\definecolor{noteboxintegrationbg}{HTML}{E8F7F6}
+\definecolor{noteboxintegrationline}{HTML}{0F766E}
+\definecolor{noteboxresponsibilitybg}{HTML}{FFF4E6}
+\definecolor{noteboxresponsibilityline}{HTML}{B45309}
+\definecolor{noteboxreflexivebg}{HTML}{EFF2F7}
+\definecolor{noteboxreflexiveline}{HTML}{64748B}
+\definecolor{noteboxsynthesisbg}{HTML}{E7F7EF}
+\definecolor{noteboxsynthesisline}{HTML}{2F855A}
+\definecolor{noteboxdisclosurebg}{HTML}{F5EDFF}
+\definecolor{noteboxdisclosureline}{HTML}{A855F7}
+\definecolor{noteboxmisusebg}{HTML}{FFEDEA}
+\definecolor{noteboxmisuseline}{HTML}{B42318}
+\definecolor{noteboxmethodologybg}{HTML}{EEF0FF}
+\definecolor{noteboxmethodologyline}{HTML}{5046E5}
+\definecolor{noteboxcontextbg}{HTML}{F0F4F8}
+\definecolor{noteboxcontextline}{HTML}{4A5568}
+\definecolor{noteboxscopebg}{HTML}{FEF3E2}
+\definecolor{noteboxscopeline}{HTML}{92400E}
+\definecolor{noteboxchecklistbg}{HTML}{CCFBF1}
+\definecolor{noteboxchecklistline}{HTML}{0D9488}
+\definecolor{noteboxpreludebg}{HTML}{F9FAFB}
+\definecolor{noteboxpreludeline}{HTML}{9CA3AF}
+
+% --------------------------------------------------
+% Table appearance helpers
+% --------------------------------------------------
+\definecolor{iaspTableStripe}{HTML}{F3F5F7}
+\definecolor{iaspTableBorder}{HTML}{C9CED6}
+
+% Global table row breathing room
+\renewcommand{\arraystretch}{1.18}
+
+% Standard compact: slightly smaller font and tighter padding
+\newcommand{\iaspTableCompactStart}{%
+  \begingroup\footnotesize%
+  \setlength{\tabcolsep}{2.5pt}%
+  \renewcommand{\arraystretch}{1.05}%
+  % Enable hyphenation and word-wrap in table cells
+  \setlength{\LTpre}{0.5em}%
+  \setlength{\LTpost}{0.5em}%
+}
+\newcommand{\iaspTableCompactEnd}{\endgroup}
+
+\newcommand{\iaspTableStripedStart}{\rowcolors{2}{iaspTableStripe}{white}}
+\newcommand{\iaspTableStripedEnd}{\rowcolors{2}{}{}}
+
+\newenvironment{iaspTableBordered}{%
+  \begin{mdframed}[
+    linecolor=iaspTableBorder,
+    linewidth=0.6pt,
+    backgroundcolor=white,
+    skipabove=0.6em,
+    skipbelow=0.6em,
+    innerleftmargin=6pt,
+    innerrightmargin=6pt,
+    innertopmargin=6pt,
+    innerbottommargin=6pt
+  ]%
+}{\end{mdframed}}
+\definecolor{noteboxdiagnosticbg}{HTML}{E7F0FF}
+\definecolor{noteboxdiagnosticline}{HTML}{2454C6}
+\definecolor{noteboxclosingbg}{HTML}{F5F7FB}
+\definecolor{noteboxclosingline}{HTML}{475467}
+\definecolor{exampleboxbg}{HTML}{E8F1FF}
+\definecolor{exampleboxline}{HTML}{2F80ED}
+\definecolor{definitionboxbg}{HTML}{E6F7EF}
+\definecolor{definitionboxline}{HTML}{1B7F4D}
+
+\newcommand{\iaspConvertedGraySpec}{}
+\newcommand{\iaspConvertColorToGray}[1]{%%
+  \convertcolorspec{named}{#1}{gray}{\iaspConvertedGraySpec}%%
+  \definecolor{#1}{gray}{\iaspConvertedGraySpec}%%
+}
+
+\ifthenelse{\boolean{rendergrayscale}}{%%
+  \forcsvlist{\iaspConvertColorToGray}{%%
+    noteboxplainbg,%%
+    noteboxplainline,%%
+    noteboxbg,%%
+    noteboxline,%%
+    noteboxbreadcrumbbg,%%
+    noteboxbreadcrumbline,%%
+    noteboxwarningbg,%%
+    noteboxwarningline,%%
+    noteboxcontrastbg,%%
+    noteboxcontrastline,%%
+    noteboxtransitionbg,%%
+    noteboxtransitionline,%%
+    noteboxnavigationbg,%%
+    noteboxnavigationline,%%
+    noteboxbridgebg,%%
+    noteboxbridgeline,%%
+    noteboxusagebg,%%
+    noteboxusageline,%%
+    noteboxintegrationbg,%%
+    noteboxintegrationline,%%
+    noteboxresponsibilitybg,%%
+    noteboxresponsibilityline,%%
+    noteboxreflexivebg,%%
+    noteboxreflexiveline,%%
+    noteboxsynthesisbg,%%
+    noteboxsynthesisline,%%
+    noteboxdisclosurebg,%%
+    noteboxdisclosureline,%%
+    noteboxmisusebg,%%
+    noteboxmisuseline,%%
+    noteboxmethodologybg,%%
+    noteboxmethodologyline,%%
+    noteboxcontextbg,%%
+    noteboxcontextline,%%
+    noteboxscopebg,%%
+    noteboxscopeline,%%
+    noteboxchecklistbg,%%
+    noteboxchecklistline,%%
+    noteboxdiagnosticbg,%%
+    noteboxdiagnosticline,%%
+    noteboxclosingbg,%%
+    noteboxclosingline,%%
+    exampleboxbg,%%
+    exampleboxline,%%
+    definitionboxbg,%%
+    definitionboxline%%
+  }%%
+}{}
+
+\providecommand{\notebadgebgnormal}{noteboxline!15!white}
+\providecommand{\notebadgebgbreadcrumb}{noteboxbreadcrumbline!18!white}
+\providecommand{\notebadgebgwarning}{noteboxwarningline!15!white}
+\providecommand{\notebadgebgcontrast}{noteboxcontrastline!18!white}
+\providecommand{\notebadgebgtransition}{noteboxtransitionline!18!white}
+\providecommand{\notebadgebgnavigation}{noteboxnavigationline!18!white}
+\providecommand{\notebadgebgbridge}{noteboxbridgeline!18!white}
+\providecommand{\notebadgebgusage}{noteboxusageline!18!white}
+\providecommand{\notebadgebgintegration}{noteboxintegrationline!18!white}
+\providecommand{\notebadgebgresponsibility}{noteboxresponsibilityline!18!white}
+\providecommand{\notebadgebgreflexive}{noteboxreflexiveline!18!white}
+\providecommand{\notebadgebgsynthesis}{noteboxsynthesisline!18!white}
+\providecommand{\notebadgebgdisclosure}{noteboxdisclosureline!18!white}
+\providecommand{\notebadgebgmisuse}{noteboxmisuseline!15!white}
+\providecommand{\notebadgebgmethodology}{noteboxmethodologyline!18!white}
+\providecommand{\notebadgebgcontext}{noteboxcontextline!18!white}
+\providecommand{\notebadgebgscope}{noteboxscopeline!18!white}
+\providecommand{\notebadgebgchecklist}{noteboxchecklistline!18!white}
+\providecommand{\notebadgebgdiagnostic}{noteboxdiagnosticline!18!white}
+\providecommand{\notebadgebgclosing}{noteboxclosingline!18!white}
+\providecommand{\sidebarbadgebg}{sidebarbg!70!white}
+\providecommand{\boxbadgebg}{sidebarbg!70!white}
+
+\providecommand{\IaspLatexDir}{assets/latex}
+\input{\IaspLatexDir/box-sidebar.tex}
+\input{\IaspLatexDir/box-sidebar-inline.tex}
+\input{\IaspLatexDir/box-callout.tex}
+\input{\IaspLatexDir/box-note.tex}
+\input{\IaspLatexDir/box-example.tex}
+\input{\IaspLatexDir/box-definition.tex}
+\input{\IaspLatexDir/bridgehead.tex}
+
+% --------------------------------------------------
+% Hyperref styling (screen vs print)
+% --------------------------------------------------
+\usepackage[hidelinks]{hyperref}
+
+\ifthenelse{\boolean{isscreen}}{%%
+  % Screen PDF: colored links for easier navigation
+  \hypersetup{
+    breaklinks=true,
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+  }
+}{%%
+  % Print PDF: avoid colored/boxed links
+  \hypersetup{
+    breaklinks=true,
+    colorlinks=false,
+    pdfborder={0 0 0}
+  }
+}
+
+% --------------------------------------------------
+% Epigraphs
+% --------------------------------------------------
+\usepackage{ragged2e}
+
+\newenvironment{epigraph}{
+  \begin{flushright}
+  \begin{minipage}{0.65\textwidth}
+  \itshape
+}{
+  \end{minipage}
+  \end{flushright}
+  \vspace{2em}
+}
+
+% Slightly tighter epigraph variant for inline, chapter-opening use
+\newenvironment{epigraphtight}{
+  \begin{flushright}
+  \begin{minipage}{0.6\textwidth}
+  \itshape
+}{
+  \end{minipage}
+  \end{flushright}
+  \vspace{1em}
+}
+
+
+
+% Usage (once your Lua filter or Pandoc mappings emit it):
+% \begin{sidebar}
+%   Sidebar text...
+% \end{sidebar}
