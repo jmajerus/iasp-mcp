@@ -218,10 +218,10 @@ export function parseMarkdownFences(lines: string[], startIndex = 0, lineOffset 
 }
 
 const CONTAINER_CSS = (s: GhostStyle) =>
-  `background-color: ${s.bg}; border-left: 4px solid ${s.border}; padding: 16px 20px; margin: 20px 0; border-radius: 0 6px 6px 0; font-family: Georgia, 'Times New Roman', serif; line-height: 1.5;`;
+  `background-color: ${s.bg}; border-left: 4px solid ${s.border}; padding: 14px 18px; margin: 18px 0; border-radius: 0 6px 6px 0; font-family: Georgia, 'Times New Roman', serif; line-height: 1.5;`;
 
 const BADGE_CSS = (s: GhostStyle) =>
-  `display: inline-block; background-color: ${s.badgeBg}; color: ${s.badgeFg}; font-size: 0.68em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; padding: 3px 10px; border-radius: 3px; margin-bottom: 10px; font-family: 'Helvetica Neue', Arial, sans-serif;`;
+  `display: inline-block; background-color: ${s.badgeBg}; color: ${s.badgeFg}; font-size: 0.68em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; padding: 2px 9px; border-radius: 3px; margin-bottom: 4px; font-family: 'Helvetica Neue', Arial, sans-serif;`;
 
 const GHOST_DELIVERY_SLUGS: Record<string, string> = {
   "front-matter": "front-matter",
@@ -413,7 +413,7 @@ export function wrapGhostBlock(
   if (noBadge) {
     header = `\n${opened}`;
   } else if (style.glyphOnly) {
-    header = `\n${opened}\n<p style="margin: 0 0 8px 0; font-size: 1.1em;">${style.glyph}</p>`;
+    header = `\n${opened}\n<p style="margin: 0 0 4px 0; font-size: 1.1em;">${style.glyph}</p>`;
   } else {
     header = `\n${opened}\n<div style="${BADGE_CSS(style)}">${style.glyph} ${style.label}</div>`;
   }

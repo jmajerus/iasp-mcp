@@ -472,7 +472,7 @@ local function sidebar_badge_blocks()
   local glyph_span = span_with_classes({ pandoc.Str(SIDEBAR_GLYPH_UTF8) }, { "sidebar-badge__glyph" })
   local label_span = span_with_classes({ pandoc.Str(SIDEBAR_BADGE_LABEL) }, { "sidebar-badge__label" })
   local badge_span = span_with_classes({ glyph_span, pandoc.Space(), label_span }, { "sidebar-badge" })
-  return { pandoc.Para({ badge_span }) }
+  return { pandoc.Div({ pandoc.Plain({ badge_span }) }, pandoc.Attr("", { "sidebar-badge-row" }, {})) }
 end
 
 -- Generic box badge support -------------------------------------------------
@@ -592,7 +592,7 @@ local function box_badge_blocks(label)
 
   local label_span = span_with_classes({ pandoc.Str(label) }, { "box-badge__label" })
   local badge_span = span_with_classes({ label_span }, { "box-badge" })
-  return { pandoc.Para({ badge_span }) }
+  return { pandoc.Div({ pandoc.Plain({ badge_span }) }, pandoc.Attr("", { "box-badge-row" }, {})) }
 end
 
 local function div_has_heading_glyph(div)
