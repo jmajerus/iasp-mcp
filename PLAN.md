@@ -75,8 +75,9 @@ CSS, and Ghost export that `iasp-mcp` resolves cleanly:
 |---|---|
 | Vocabulary authority | `terminology-mcp` (`scheme = "iasp"`). `iasp-mcp` follows its numbered changelog (`GET /api/state?scheme=iasp`, `GET /api/changes?since=N&scheme=iasp`) and reports progress to `POST /api/subscribers/iasp-mcp/progress`, on the same contract as `quote-mcp`. |
 | Offline / bootstrap fallback | A seed snapshot of `vocab/iasp.ttl` (and the initial state from `terminology-mcp`) is bundled so tests and isolated demos work even when `terminology-mcp.localdomain` is unreachable; when `terminology-mcp` is reachable, the changelog follower keeps the SQLite store current. |
-| Compositional semantics | Leftmost class names the **delivery role** (Axis A); subsequent classes name **modifiers** (Axis B) or layout/stage hints. `iasp-mcp` never treats unmarked prose as invalid, and distinguishes between (a) unknown classes, (b) valid IASP modifiers that compose with `note` using the plain note box, and (c) the 22 `note-variants` that have dedicated badges/glyphs and LaTeX environments. |
-| Rendering assets in-repo | The reusable Pandoc Lua filters (`assets/lua/`), XeLaTeX headers and box environments (`assets/latex/`), CSS stylesheets (`assets/styles/`), Ghost Markdown exporter, and an end-to-end sample project (`demo/`) live in this repository so `iasp-mcp` can demonstrate and execute full builds out of the box. The asset directory is self-contained so it can be extracted or packaged independently later if desired. |
+| Compositional semantics | Leftmost class names the **delivery role** (Axis A); subsequent classes name **modifiers** (Axis B) or layout/stage hints. `iasp-mcp` never treats unmarked prose as invalid, and distinguishes between (a) unknown classes, (b) valid IASP modifiers that compose with `note` using the plain note box, and (c) the 23 `note-variants` that have dedicated badges/glyphs and LaTeX environments. |
+| Semantic & provenance retention in output | Rendered HTML, EPUB, and Ghost Markdown retain machine-readable SKOS RDFa (`vocab`, `typeof="Concept"`, `resource="urn:iasp:concept:<slug>"`, `about`) and `data-iasp-*` attributes (`data-iasp-delivery`, `data-iasp-modifiers`, `data-iasp-concepts`, `data-iasp-terms` pointing to `https://vocabulary.majerus.us/api/schemes/iasp/slugs/<slug>`). External vocabulary concepts (`concepts="human-work:curiosity human-work:confirmation-bias"`) and `<!-- quote <id> -->` provenance (`data-quote-id`, `data-citekey`, `data-work-key`, `data-concepts`, `data-concept-uris`, `data-concept-terms`) are resolved across `quote-mcp` and `terminology-mcp` and bound onto the rendered elements (`src/provenance.ts`). |
+| Rendering assets in-repo | The reusable Pandoc Lua filters (`assets/lua/`), XeLaTeX headers and box environments (`assets/latex/`), CSS stylesheets (`assets/styles/`), Ghost and clean Markdown exporters, and two end-to-end sample essays (`demo/essay-on-attentive-reading.md` and `demo/interoperability-essay.md`) live in this repository so `iasp-mcp` can demonstrate and execute full builds out of the box. |
 | Stack and runtime | TypeScript on Node 22 (`@modelcontextprotocol/sdk`, `better-sqlite3`, `jose`, `zod`, `vitest`), matching `quote-mcp` and `holdings-mcp`. Stateless Streamable HTTP at `/mcp`, stdio transport for local CLI/IDE use, `/health`, `/` (interactive IASP reference, visual style guide, and live demo preview), and `/admin` (subscriber status, local toolchain checks, and sibling services). |
 
 ## Data model
@@ -151,14 +152,15 @@ repository includes `demo/`:
 
 ## Phases
 
-1. **Phase 1 — Store, `terminology-mcp` subscriber, rendering assets, MCP server, and end-to-end demo (this milestone)**:
-   - SQLite store (`src/db.ts`) and `terminology-mcp` follower (`src/terminology.ts`) for the `iasp` scheme, with offline bootstrap fallback from `vocab/iasp.ttl` / snapshot so tests and local runs always succeed.
-   - Bundled Pandoc/Lua/LaTeX/CSS assets (`assets/`) ported from `iasp_tooling/` with the 5 audit fixes applied.
-   - Markdown parser, inspector, validator, directory wrapper, AI disclosure helper, and TypeScript Ghost exporter (`src/markdown.ts`, `src/ghost.ts`).
-   - Pandoc rendering runner (`src/render.ts`) supporting `ghost`, `html`, `pdf` (`screen`/`print`), `epub`, `docx`, and `rtf`, plus the `demo/` showcase.
-   - MCP server (`src/mcp.ts`) over Streamable HTTP (`/mcp`) and stdio, plus LAN web UI (`/` and `/admin`) and CLI (`src/cli.ts`).
-   - Comprehensive automated tests (`tests/`) covering `terminology-mcp` sync, composition, Markdown validation, Ghost export, Pandoc HTML/PDF/EPUB rendering on the `demo/` essay, and MCP tool calls.
-2. **Phase 2 — Multi-file book & annex profiles**:
+1. **Phase 1 — Store, `terminology-mcp` subscriber, rendering assets, MCP server, and end-to-end demos (done 2026-11-09)**:
+   - SQLite store (`src/db.ts`) and `terminology-mcp` follower (`src/terminology.ts`) for the `iasp` scheme, with offline bootstrap fallback from `vocab/iasp.ttl` / `vocab/iasp-seed.json`.
+   - Bundled Pandoc/Lua/LaTeX/CSS assets (`assets/`) ported from `iasp_tooling/` with the audit fixes applied.
+   - Markdown parser, inspector, validator, directory wrapper, AI disclosure helper, and TypeScript clean Markdown (`md`) + Ghost (`ghost`) exporters (`src/markdown.ts`, `src/ghost.ts`).
+   - Pandoc rendering runner (`src/render.ts`) supporting `md`, `ghost`, `html`, `pdf` (`screen`/`print`), `epub`, `docx`, and `rtf`.
+   - Inline SKOS RDFa (`vocab`, `typeof="Concept"`, `resource`, `about`), `data-iasp-*` attributes, external `concepts="..."` tagging, and `quote-mcp` / `terminology-mcp` provenance binding (`src/provenance.ts`).
+   - Two end-to-end demonstrations in `demo/`: `essay-on-attentive-reading.md` (`source: "demo"`) and the six-server `interoperability-essay.md` (`source: "interop"`).
+   - Automated tests (`tests/`) covering `terminology-mcp` sync, composition, Markdown validation, SKOS/provenance retention, clean Markdown & Ghost export, Pandoc HTML/PDF/EPUB rendering, and MCP tool calls.
+2. **Phase 2 — LXC deployment & Authoring MCP portal integration (done 2026-11-09)**:
+   - Deployed `iasp-mcp` to `iasp-mcp.localdomain:8000` (`deploy/`, `tools/deploy.mjs`, `tools/iasp-status.mjs`, `.vscode/settings.json`), behind Cloudflare Access, and added to the Cloudflare Authoring MCP portal (`https://mcp.majerus.us/mcp`) alongside `terminology-mcp`, `holdings-mcp`, `corpus-mcp`, `quote-mcp`, and `zotero-mcp`.
+3. **Phase 3 — Multi-file book & annex profiles (planned)**:
    - Port `order_sources.py`, `container_walker.py`, `generate_toc.py`, and KDP print gutter prediction into `iasp-mcp` (or a companion `iasp-build` CLI package) for full multi-chapter book and annex builds.
-3. **Phase 3 — LXC deployment & Authoring MCP portal integration**:
-   - Deploy `iasp-mcp` to `iasp-mcp.localdomain:8000` behind Cloudflare Access, register it in `holdings-mcp`'s service checks, and add it to the Authoring MCP portal alongside `terminology-mcp`, `holdings-mcp`, `corpus-mcp`, `quote-mcp`, and `zotero-mcp`.
