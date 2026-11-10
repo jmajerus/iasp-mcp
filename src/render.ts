@@ -71,7 +71,9 @@ export interface RenderDocumentOptions {
   outputBasename?: string;
   stage?: "final" | "draft";
   bibliography?: string;
+  bibtexContent?: string;
   csl?: string;
+  aiMetadata?: AiDisclosureMetadata;
   optimizePdf?: boolean;
   validateEpub?: boolean;
   returnContent?: boolean;
@@ -88,7 +90,7 @@ export interface RenderedArtifact {
   content?: string;
 }
 
-const PANDOC_READER = "markdown+fancy_lists+fenced_divs+header_attributes+link_attributes+smart";
+const PANDOC_READER = "markdown+citations+fancy_lists+fenced_divs+header_attributes+link_attributes+smart";
 
 export function renderDocument(options: RenderDocumentOptions = {}) {
   const rootDir = options.rootDir ?? PROJECT_ROOT;
@@ -100,8 +102,9 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
 
   let inputPath: string;
   let tempInputPath: string | null = null;
+  let tempBibPath: string | null = null;
   let rawMarkdown: string;
-  let aiMetadata: AiDisclosureMetadata | undefined;
+  let aiMetadata: AiDisclosureMetadata | undefined = options.aiMetadata;
 
   if (options.markdown !== undefined) {
     rawMarkdown = options.markdown;
@@ -111,19 +114,34 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
     inputPath = tempInputPath;
   } else {
     const srcSpec = options.source?.trim() || "demo";
-    inputPath = srcSpec === "demo" ? DEMO_ARTICLE_PATH : resolve(rootDir, srcSpec);
+    inputPath =
+      srcSpec === "demo"
+        ? DEMO_ARTICLE_PATH
+        : srcSpec === "interop" || srcSpec === "interoperability"
+          ? resolve(rootDir, "demo/interoperability-essay.md")
+          : resolve(rootDir, srcSpec);
     if (!existsSync(inputPath)) {
       throw new ToolError(`Source file not found: ${srcSpec}`);
     }
     rawMarkdown = readFileSync(inputPath, "utf8");
     const sidecarPath = inputPath.replace(/\.(md|markdown)$/i, ".ai.json");
-    if (existsSync(sidecarPath)) {
+    if (!aiMetadata && existsSync(sidecarPath)) {
       try {
         aiMetadata = JSON.parse(readFileSync(sidecarPath, "utf8")) as AiDisclosureMetadata;
       } catch {
         aiMetadata = undefined;
       }
     }
+  }
+
+  if (options.bibtexContent?.trim()) {
+    const cleanedBib = options.bibtexContent
+      .trim()
+      .replace(/^#.*?\n+/m, "")
+      .replace(/^```(?:bibtex)?\s*\n?/i, "")
+      .replace(/\n?```\s*$/i, "");
+    tempBibPath = resolve(outDir, `.tmp-refs-${process.pid}.bib`);
+    writeFileSync(tempBibPath, `${cleanedBib}\n`, "utf8");
   }
 
   const { frontmatter } = extractFrontmatter(rawMarkdown);
@@ -150,9 +168,11 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
         });
         const outPath = resolve(outDir, `${baseStem}.md`);
         writeFileSync(outPath, mdContent, "utf8");
+        const displayPath = relative(rootDir, outPath);
+        const cleanOutputPath = displayPath.startsWith("..") ? outPath : displayPath || outPath;
         artifacts.push({
           format: "md",
-          output_path: relative(rootDir, outPath) || outPath,
+          output_path: cleanOutputPath,
           bytes: Buffer.byteLength(mdContent, "utf8"),
           warnings: [],
           ...(options.returnContent ? { content: mdContent } : {}),
@@ -169,9 +189,11 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
         });
         const outPath = resolve(outDir, `${baseStem}-ghost.md`);
         writeFileSync(outPath, ghostContent, "utf8");
+        const displayPath = relative(rootDir, outPath);
+        const cleanOutputPath = displayPath.startsWith("..") ? outPath : displayPath || outPath;
         artifacts.push({
           format: "ghost",
-          output_path: relative(rootDir, outPath) || outPath,
+          output_path: cleanOutputPath,
           bytes: Buffer.byteLength(ghostContent, "utf8"),
           warnings: [],
           ...(options.returnContent ? { content: ghostContent } : {}),
@@ -208,18 +230,31 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
         `title=${docTitle}`,
       ];
 
-      if (options.bibliography) {
+      if (tempBibPath) {
+        args.push("--citeproc", `--bibliography=${tempBibPath}`);
+      } else if (options.bibliography) {
         const bibPath = resolve(rootDir, options.bibliography);
         if (!existsSync(bibPath)) throw new ToolError(`Bibliography file not found: ${options.bibliography}`);
         args.push("--citeproc", `--bibliography=${bibPath}`);
       } else if (frontmatter.bibliography) {
-        const bibPath = resolve(dirname(inputPath), frontmatter.bibliography);
-        if (existsSync(bibPath)) args.push("--citeproc", `--bibliography=${bibPath}`);
+        const bibRel = resolve(dirname(inputPath), frontmatter.bibliography);
+        const bibRoot = resolve(rootDir, frontmatter.bibliography);
+        const bibDemo = resolve(rootDir, "demo", frontmatter.bibliography);
+        const resolvedBib = existsSync(bibRel)
+          ? bibRel
+          : existsSync(bibRoot)
+            ? bibRoot
+            : existsSync(bibDemo)
+              ? bibDemo
+              : null;
+        if (resolvedBib) args.push("--citeproc", `--bibliography=${resolvedBib}`);
       }
       if (options.csl) {
         const cslPath = resolve(rootDir, options.csl);
         if (!existsSync(cslPath)) throw new ToolError(`CSL file not found: ${options.csl}`);
         args.push(`--csl=${cslPath}`);
+      } else if (frontmatter["link-citations"] === "true") {
+        args.push("-M", "link-citations=true");
       }
 
       let tempLatexOverride: string | null = null;
@@ -299,9 +334,11 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
         }
 
         const st = statSync(outPath);
+        const displayPath = relative(rootDir, outPath);
+        const cleanOutputPath = displayPath.startsWith("..") ? outPath : displayPath || outPath;
         artifacts.push({
           format,
-          output_path: relative(rootDir, outPath) || outPath,
+          output_path: cleanOutputPath,
           bytes: st.size,
           warnings,
           ...(format === "pdf" || format === "pdf-print" ? { linearized } : {}),
@@ -314,6 +351,7 @@ export function renderDocument(options: RenderDocumentOptions = {}) {
     }
   } finally {
     if (tempInputPath) rmSync(tempInputPath, { force: true });
+    if (tempBibPath) rmSync(tempBibPath, { force: true });
   }
 
   return {

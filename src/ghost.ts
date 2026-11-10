@@ -19,7 +19,7 @@ import {
  * CommonMark Type-6 HTML `<div>` wrappers so Ghost renders inner Markdown natively.
  */
 
-const WORKS_CITED_HEADING_RE = /^\s*##+\s+Works Cited\b/i;
+const WORKS_CITED_HEADING_RE = /^\s*##+\s+(Works Cited|References|Bibliography)\b/i;
 const FENCE_CLOSER_RE = /^:::\s*$/;
 const SINGLE_LINE_FENCE_RE = /^(:::\s*\{[^}]+\})\s+(.*?)\s*:::$/;
 const INLINE_CONTENT_FENCE_RE = /^(:::\s*\{[^}]+\})\s+(.+?)\s*$/;

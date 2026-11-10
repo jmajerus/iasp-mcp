@@ -174,7 +174,7 @@ export function createServer(db: DB): McpServer {
         source: z
           .string()
           .optional()
-          .describe("Path to a Markdown file, or 'demo' to render the bundled showcase essay (demo/essay-on-attentive-reading.md)"),
+          .describe("Path to a Markdown file, 'demo' for the IASP showcase (demo/essay-on-attentive-reading.md), or 'interop' for the 6-server interoperability essay (demo/interoperability-essay.md)"),
         markdown: z.string().optional().describe("Inline Markdown source to render instead of a file"),
         title: z.string().optional().describe("Optional document title override"),
         formats: z
@@ -185,7 +185,14 @@ export function createServer(db: DB): McpServer {
         output_basename: z.string().optional().describe("Base filename without extension"),
         stage: z.enum(["final", "draft"]).optional().describe("Build stage: 'final' (default, hides .draft) or 'draft' (shows .draft, hides .final)"),
         bibliography: z.string().optional().describe("Optional path to a .bib bibliography file for --citeproc"),
+        bibtex_content: z
+          .string()
+          .optional()
+          .describe("Inline BibTeX entries (e.g. from zotero_export_bibliography or corpus_cite_passage) for --citeproc when rendering over remote MCP"),
         csl: z.string().optional().describe("Optional path to a .csl citation style file"),
+        ai_disclosure: z.string().optional().describe("Inline qualitative AI disclosure line to inject in md/ghost outputs"),
+        technical_note: z.string().optional().describe("Inline technical note line to inject in md/ghost outputs"),
+        disclosure_variant: z.string().optional().describe("Disclosure box style variant (default: 'ai' or 'disclosure')"),
         optimize_pdf: z.boolean().optional().describe("Linearize PDF with qpdf when available (default true)"),
         validate_epub: z.boolean().optional().describe("Run epubcheck on generated EPUB when available (default false)"),
         return_content: z.boolean().optional().describe("Include rendered text content in the response for 'md', 'ghost', and 'html' (default false)"),
@@ -195,6 +202,10 @@ export function createServer(db: DB): McpServer {
     ({
       output_dir,
       output_basename,
+      bibtex_content,
+      ai_disclosure,
+      technical_note,
+      disclosure_variant,
       optimize_pdf,
       validate_epub,
       return_content,
@@ -205,6 +216,16 @@ export function createServer(db: DB): McpServer {
           ...rest,
           outputDir: output_dir,
           outputBasename: output_basename,
+          bibtexContent: bibtex_content,
+          ...(ai_disclosure || technical_note
+            ? {
+                aiMetadata: {
+                  ai_disclosure,
+                  technical_note,
+                  disclosure_variant,
+                },
+              }
+            : {}),
           optimizePdf: optimize_pdf,
           validateEpub: validate_epub,
           returnContent: return_content,

@@ -65,23 +65,13 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
           .end(html);
       }
 
-      if (
-        url.pathname === "/demo/html" ||
-        url.pathname === "/demo/md" ||
-        url.pathname === "/demo/ghost" ||
-        url.pathname === "/demo/pdf"
-      ) {
+      const demoMatch = /^\/(demo|interop)\/(html|md|ghost|pdf)$/.exec(url.pathname);
+      if (demoMatch) {
         if (req.method !== "GET") return void res.writeHead(405, { allow: "GET" }).end();
-        const fmt =
-          url.pathname === "/demo/html"
-            ? "html"
-            : url.pathname === "/demo/md"
-              ? "md"
-              : url.pathname === "/demo/ghost"
-                ? "ghost"
-                : "pdf";
+        const source = demoMatch[1] === "interop" ? "interop" : "demo";
+        const fmt = demoMatch[2] as "html" | "md" | "ghost" | "pdf";
         const rendered = renderDocument({
-          source: "demo",
+          source,
           formats: [fmt],
           returnContent: fmt !== "pdf",
         });
@@ -101,7 +91,7 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
         return void res
           .writeHead(200, {
             "content-type": "application/pdf",
-            "content-disposition": 'inline; filename="essay-on-attentive-reading.pdf"',
+            "content-disposition": `inline; filename="${source === "interop" ? "interoperability-essay.pdf" : "essay-on-attentive-reading.pdf"}"`,
             "cache-control": "no-store",
           })
           .end(pdfBytes);

@@ -74,13 +74,20 @@ export function homePage(db: DB, params = new URLSearchParams(), showAdmin = tru
     </div>
 
     <section id="demo">
-      <h2>End-to-End Demonstration</h2>
-      <p>The bundled demonstration essay (<code>demo/essay-on-attentive-reading.md</code>) exercises Axis A delivery roles, Axis B compositions, <code>.include</code> fragment splicing, <code>{{meta:version}}</code> placeholders, stage guards, and AI disclosure sidecars across Pandoc and Ghost targets.</p>
+      <h2>End-to-End Demonstrations</h2>
+      <p><strong>1. IASP Core Showcase (<code>demo/essay-on-attentive-reading.md</code>):</strong> Exercises Axis A delivery roles, Axis B compositions, <code>.include</code> fragment splicing, <code>{{meta:version}}</code> placeholders, stage guards, and AI disclosure sidecars.</p>
       <div class="demo-links">
         <a class="btn" href="/demo/html" target="_blank" rel="noopener">Open Rendered HTML Essay →</a>
         <a class="btn secondary" href="/demo/md" target="_blank" rel="noopener">View Clean Markdown (no HTML tags)</a>
         <a class="btn secondary" href="/demo/ghost" target="_blank" rel="noopener">View Ghost CMS Markdown</a>
         <a class="btn secondary" href="/demo/pdf" target="_blank" rel="noopener">Build &amp; Open Screen PDF</a>
+      </div>
+      <p style="margin-top:20px"><strong>2. Six-Server Authoring Interoperability Demo (<code>demo/interoperability-essay.md</code>):</strong> Co-authored across <code>terminology-mcp</code>, <code>holdings-mcp</code>, <code>corpus-mcp</code>, <code>quote-mcp</code>, <code>zotero-mcp</code>, and <code>iasp-mcp</code> with verified Calibre quotes (<code>&lt;!-- quote &lt;id&gt; --&gt;</code>), BetterBibTeX <code>--citeproc</code> citations, and compositional IASP wrappers.</p>
+      <div class="demo-links">
+        <a class="btn" href="/interop/html" target="_blank" rel="noopener">Open Interop HTML (with Citeproc) →</a>
+        <a class="btn secondary" href="/interop/md" target="_blank" rel="noopener">View Clean Markdown</a>
+        <a class="btn secondary" href="/interop/ghost" target="_blank" rel="noopener">View Ghost CMS Markdown</a>
+        <a class="btn secondary" href="/interop/pdf" target="_blank" rel="noopener">Build &amp; Open Interop PDF</a>
       </div>
     </section>
 

@@ -66,8 +66,15 @@ function parseFormats(raw: string | undefined, fallback: RenderFormat[]): Render
 function demoCommand() {
   const formats = parseFormats(option("--formats"), ["md", "ghost", "html", "pdf", "epub"]);
   const stage = option("--stage") === "draft" ? "draft" : "final";
+  const target = option("--source") ?? "all";
+  if (target === "all") {
+    const demo = renderDocument({ source: "demo", formats, stage, validateEpub: true });
+    const interop = renderDocument({ source: "interop", formats, stage, validateEpub: true });
+    console.log(JSON.stringify({ demo, interop }, null, 2));
+    return;
+  }
   const result = renderDocument({
-    source: "demo",
+    source: target,
     formats,
     stage,
     validateEpub: true,

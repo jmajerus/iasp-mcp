@@ -318,7 +318,8 @@
 \usepackage{microtype} % nicer text spacing
 \usepackage{xurl}      % allow URL line-breaks at slashes, dots, etc.
 \urlstyle{same}        % keep URL font consistent with surrounding text
-\setlength{\Urlmuskip}{0mu plus 2mu} % permit additional URL break flexibility
+\muskipdef\Urlmuskip=0
+\Urlmuskip=0mu plus 2mu\relax % permit additional URL break flexibility
 \makeatletter
 % Add extra safe breakpoints for long query-heavy URLs in references.
 \g@addto@macro\UrlBreaks{\do\-\do\_\do\~\do\&\do\=\do\?\do\#}

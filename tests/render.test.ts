@@ -39,6 +39,20 @@ describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
       expect(htmlArtifact.content).toContain("Included Fragment");
       expect(htmlArtifact.content).not.toContain("Draft-only working note:");
 
+      const interopBuild = renderDocument({
+        source: "interop",
+        formats: ["md", "html"],
+        outputDir: tmp,
+        stage: "final",
+        returnContent: true,
+      });
+      const interopMd = interopBuild.artifacts.find((a) => a.format === "md")!;
+      const interopHtml = interopBuild.artifacts.find((a) => a.format === "html")!;
+      expect(interopMd.content).toContain("> **◇ AI DISCLOSURE**");
+      expect(interopHtml.content).toContain("class=\"csl-entry\"");
+      expect(interopHtml.content).toContain("id=\"ref-montalion2024learning\"");
+      expect(interopHtml.content).toContain("id=\"ref-brotherton2015suspicious\"");
+
       const draftBuild = renderDocument({
         source: "demo",
         formats: ["md", "ghost", "html"],
