@@ -45,6 +45,29 @@ describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
     expect(demoGhostRes.status).toBe(200);
     const demoGhost = await demoGhostRes.text();
     expect(demoGhost).toContain("Naming What Prose Is Doing");
+
+    // Verify public tunnel requests (with Cloudflare headers and no Access token) can read /demo/* and /interop/*
+    const proxiedDemoRes = await fetch(`${baseUrl}/demo/html`, {
+      headers: { "cf-ray": "test-ray-id", "cf-connecting-ip": "203.0.113.5" },
+    });
+    expect(proxiedDemoRes.status).toBe(200);
+
+    const proxiedInteropRes = await fetch(`${baseUrl}/interop/md`, {
+      headers: { "cf-ray": "test-ray-id", "cf-connecting-ip": "203.0.113.5" },
+    });
+    expect(proxiedInteropRes.status).toBe(200);
+
+    // While /mcp and /admin remain protected behind Cloudflare Access (401 without token)
+    const proxiedMcpRes = await fetch(`${baseUrl}/mcp`, {
+      method: "POST",
+      headers: { "cf-ray": "test-ray-id", "cf-connecting-ip": "203.0.113.5" },
+    });
+    expect(proxiedMcpRes.status).toBe(401);
+
+    const proxiedAdminRes = await fetch(`${baseUrl}/admin`, {
+      headers: { "cf-ray": "test-ray-id", "cf-connecting-ip": "203.0.113.5" },
+    });
+    expect(proxiedAdminRes.status).toBe(401);
   });
 
   it("exposes all 10 MCP tools over Streamable HTTP /mcp", async () => {

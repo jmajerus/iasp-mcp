@@ -54,12 +54,12 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
         return;
       }
 
-      if ((url.pathname === "/" && !rootMcp) || (url.pathname === "/admin" && via === "lan")) {
+      if ((url.pathname === "/" && !rootMcp) || (url.pathname === "/admin" && (via === "lan" || via === "access"))) {
         if (req.method !== "GET") return void res.writeHead(405, { allow: "GET" }).end();
         const html =
           url.pathname === "/admin"
             ? adminPage(db, options.termSync)
-            : homePage(db, url.searchParams, via === "lan");
+            : homePage(db, url.searchParams, via === "lan" || via === "access");
         return void res
           .writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" })
           .end(html);

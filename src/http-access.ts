@@ -62,7 +62,13 @@ export async function authorizeRequest(
   const localHost =
     host === "localhost" || privatePeer(host) || config.lanHosts.some((h) => h.toLowerCase() === host);
   if (!proxied && localHost && privatePeer(req.socket.remoteAddress)) return { via: "lan" as const };
-  if (token === undefined && proxied && (pathname === "/" || pathname === "/favicon.svg")) {
+  const isPublicRead =
+    (req.method === "GET" || req.method === "HEAD") &&
+    !(pathname === "/" && (req.headers.accept ?? "").includes("text/event-stream")) &&
+    (pathname === "/" ||
+      pathname === "/favicon.svg" ||
+      /^\/(demo|interop)\/(html|md|ghost|pdf)$/.test(pathname));
+  if (token === undefined && proxied && isPublicRead) {
     return { via: "public" as const };
   }
   if (typeof token !== "string" || !token) {
