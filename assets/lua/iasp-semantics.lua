@@ -1062,6 +1062,80 @@ local ARIA_ROLE_MAP = {
   bridge = "complementary"
 }
 
+local IASP_DELIVERY_SLUG_MAP = {
+  ["front-matter"] = "front-matter",
+  frontmatter = "front-matter",
+  series = "series",
+  part = "part",
+  chapter = "chapter",
+  section = "section",
+  interlude = "interlude",
+  bridge = "bridge",
+  bridgehead = "bridge",
+  sidebar = "sidebar",
+  aside = "sidebar",
+  ["sidebar-inline"] = "sidebar-inline",
+  callout = "callout",
+  note = "note",
+  footnote = "footnote",
+  endnotes = "endnotes",
+  footnotes = "endnotes",
+  epigraph = "epigraph",
+  ["epigraph-inline"] = "epigraph-inline",
+  appendix = "appendix",
+  ["back-matter"] = "back-matter",
+  backmatter = "back-matter",
+}
+
+local IASP_MODIFIER_SLUG_MAP = {
+  thesis = "thesis",
+  claim = "claim",
+  counterpoint = "counterpoint",
+  qualification = "qualification",
+  implication = "implication",
+  synthesis = "synthesis",
+  integration = "integration",
+  contrast = "contrast",
+  reflection = "reflection",
+  provocation = "provocation",
+  example = "example",
+  ["case-study"] = "case-study",
+  background = "background",
+  context = "context",
+  definition = "definition",
+  gloss = "gloss",
+  analogy = "analogy",
+  insight = "insight",
+  ["insight-major"] = "insight-major",
+  idea = "idea",
+  usage = "usage",
+  methodology = "methodology",
+  diagnostic = "diagnostic",
+  checklist = "checklist",
+  warning = "warning",
+  notice = "notice",
+  caution = "caution",
+  misuse = "misuse",
+  assumption = "assumption",
+  limitation = "limitation",
+  scope = "scope",
+  uncertainty = "uncertainty",
+  disclosure = "disclosure",
+  ai = "disclosure",
+  responsibility = "responsibility",
+  reflexive = "reflexive",
+  breadcrumb = "breadcrumb",
+  navigation = "navigation",
+  orientation = "navigation",
+  transition = "transition",
+  prelude = "prelude",
+  closing = "closing",
+}
+
+local IASP_CONCEPT_URN_PREFIX = "urn:iasp:concept:"
+local IASP_PUBLIC_TERM_PREFIX = "https://vocabulary.majerus.us/api/schemes/iasp/slugs/"
+local SKOS_VOCAB_URI = "http://www.w3.org/2004/02/skos/core#"
+
 local LOW_PRIORITY_ARIA = {}
 
 local HEADER_ROLE_ALLOWLIST = {
@@ -1175,6 +1249,89 @@ local function add_epub_type_token(attr, token)
   return true
 end
 
+local function assign_skos_annotations(el)
+  if not el or not el.classes or #el.classes == 0 then
+    return false
+  end
+  if FORMAT and FORMAT:match("latex") then
+    return false
+  end
+
+  local delivery_slug = nil
+  local modifier_slugs = {}
+  local has_insight = has_class(el, "insight")
+  local has_major = has_class(el, "major")
+
+  for _, cls in ipairs(el.classes) do
+    local lowered = cls:lower()
+    local d_slug = IASP_DELIVERY_SLUG_MAP[lowered]
+    if d_slug then
+      if not delivery_slug then
+        delivery_slug = d_slug
+      elseif d_slug == "bridge" and delivery_slug == "note" then
+        add_unique(modifier_slugs, "bridge")
+      end
+    elseif lowered == "insight" and has_insight and has_major then
+      add_unique(modifier_slugs, "insight-major")
+    elseif lowered == "major" and has_insight then
+      -- handled above as insight-major
+    else
+      local m_slug = IASP_MODIFIER_SLUG_MAP[lowered]
+      if m_slug then
+        add_unique(modifier_slugs, m_slug)
+      end
+    end
+  end
+
+  if not delivery_slug and #modifier_slugs == 0 then
+    return false
+  end
+
+  local concept_slugs = {}
+  if delivery_slug then
+    add_unique(concept_slugs, delivery_slug)
+  end
+  for _, m_slug in ipairs(modifier_slugs) do
+    add_unique(concept_slugs, m_slug)
+  end
+
+  local concept_urns = {}
+  local public_urls = {}
+  for _, slug in ipairs(concept_slugs) do
+    table.insert(concept_urns, IASP_CONCEPT_URN_PREFIX .. slug)
+    table.insert(public_urls, IASP_PUBLIC_TERM_PREFIX .. slug)
+  end
+
+  el.attributes = el.attributes or {}
+  if delivery_slug and not el.attributes["data-iasp-delivery"] then
+    el.attributes["data-iasp-delivery"] = delivery_slug
+  end
+  if #modifier_slugs > 0 and not el.attributes["data-iasp-modifiers"] then
+    el.attributes["data-iasp-modifiers"] = table.concat(modifier_slugs, " ")
+  end
+  if #concept_urns > 0 and not el.attributes["data-iasp-concepts"] then
+    el.attributes["data-iasp-concepts"] = table.concat(concept_urns, " ")
+  end
+  if #public_urls > 0 and not el.attributes["data-iasp-terms"] then
+    el.attributes["data-iasp-terms"] = table.concat(public_urls, " ")
+  end
+
+  -- Emit RDFa Lite attributes for HTML outputs (avoiding XHTML/EPUB 3 schema collisions)
+  if FORMAT and FORMAT:match("html") and not FORMAT:match("epub") then
+    if not el.attributes["vocab"] then
+      el.attributes["vocab"] = SKOS_VOCAB_URI
+    end
+    if not el.attributes["typeof"] then
+      el.attributes["typeof"] = "Concept"
+    end
+    if not el.attributes["resource"] and #concept_urns > 0 then
+      el.attributes["resource"] = concept_urns[#concept_urns]
+    end
+  end
+
+  return true
+end
+
 local function apply_semantic_aliases(el)
   if not el then
     return false
@@ -1199,8 +1356,9 @@ local function apply_semantic_aliases(el)
   end
 
   assign_aria_role(el.attributes)
+  local skos_changed = assign_skos_annotations(el)
 
-  return mutated or alias_changed
+  return mutated or alias_changed or skos_changed
 end
 
 -- Shorthand fenced divs are implemented in iasp/shorthand.lua.

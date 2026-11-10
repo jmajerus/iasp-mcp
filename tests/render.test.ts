@@ -30,12 +30,26 @@ describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
       expect(mdArtifact.content).not.toContain("Draft-only working note:");
 
       expect(ghostArtifact.content).toContain("AI DISCLOSURE");
-      expect(ghostArtifact.content).toContain("<div style=");
+      expect(ghostArtifact.content).toContain("style=\"background-color:");
+      expect(ghostArtifact.content).toContain("vocab=\"http://www.w3.org/2004/02/skos/core#\"");
+      expect(ghostArtifact.content).toContain("typeof=\"Concept\"");
+      expect(ghostArtifact.content).toContain("resource=\"urn:iasp:concept:insight-major\"");
+      expect(ghostArtifact.content).toContain("data-iasp-delivery=\"note\"");
+      expect(ghostArtifact.content).toContain("data-iasp-modifiers=\"insight-major\"");
+      expect(ghostArtifact.content).toContain("data-iasp-concepts=\"urn:iasp:concept:note urn:iasp:concept:insight-major\"");
+      expect(ghostArtifact.content).toContain("https://vocabulary.majerus.us/api/schemes/iasp/slugs/insight-major");
       expect(ghostArtifact.content).toContain("Included Fragment (`lexical-precision-sidebar.md`)");
       expect(ghostArtifact.content).toContain("Takeaway:");
       expect(ghostArtifact.content).not.toContain("Draft-only working note:");
 
       expect(htmlArtifact.content).toContain("epub:type=\"note\"");
+      expect(htmlArtifact.content).toContain("vocab=\"http://www.w3.org/2004/02/skos/core#\"");
+      expect(htmlArtifact.content).toContain("typeof=\"Concept\"");
+      expect(htmlArtifact.content).toContain("resource=\"urn:iasp:concept:insight-major\"");
+      expect(htmlArtifact.content).toContain("data-iasp-delivery=\"note\"");
+      expect(htmlArtifact.content).toContain("data-iasp-modifiers=\"insight-major\"");
+      expect(htmlArtifact.content).toContain("data-iasp-concepts=\"urn:iasp:concept:note urn:iasp:concept:insight-major\"");
+      expect(htmlArtifact.content).toContain("https://vocabulary.majerus.us/api/schemes/iasp/slugs/insight-major");
       expect(htmlArtifact.content).toContain("Included Fragment");
       expect(htmlArtifact.content).not.toContain("Draft-only working note:");
 

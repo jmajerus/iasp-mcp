@@ -213,8 +213,128 @@ const CONTAINER_CSS = (s: GhostStyle) =>
 const BADGE_CSS = (s: GhostStyle) =>
   `display: inline-block; background-color: ${s.badgeBg}; color: ${s.badgeFg}; font-size: 0.68em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; padding: 3px 10px; border-radius: 3px; margin-bottom: 10px; font-family: 'Helvetica Neue', Arial, sans-serif;`;
 
-export function wrapGhostBlock(innerMd: string, style: GhostStyle, noBadge = false): string {
-  const opened = `<div style="${CONTAINER_CSS(style)}">`;
+const GHOST_DELIVERY_SLUGS: Record<string, string> = {
+  "front-matter": "front-matter",
+  frontmatter: "front-matter",
+  series: "series",
+  part: "part",
+  chapter: "chapter",
+  section: "section",
+  interlude: "interlude",
+  bridge: "bridge",
+  bridgehead: "bridge",
+  sidebar: "sidebar",
+  aside: "sidebar",
+  "sidebar-inline": "sidebar-inline",
+  callout: "callout",
+  note: "note",
+  footnote: "footnote",
+  endnotes: "endnotes",
+  footnotes: "endnotes",
+  epigraph: "epigraph",
+  "epigraph-inline": "epigraph-inline",
+  appendix: "appendix",
+  "back-matter": "back-matter",
+  backmatter: "back-matter",
+};
+
+const GHOST_MODIFIER_SLUGS: Record<string, string> = {
+  thesis: "thesis",
+  claim: "claim",
+  counterpoint: "counterpoint",
+  qualification: "qualification",
+  implication: "implication",
+  synthesis: "synthesis",
+  integration: "integration",
+  contrast: "contrast",
+  reflection: "reflection",
+  provocation: "provocation",
+  example: "example",
+  "case-study": "case-study",
+  background: "background",
+  context: "context",
+  definition: "definition",
+  gloss: "gloss",
+  analogy: "analogy",
+  insight: "insight",
+  "insight-major": "insight-major",
+  idea: "idea",
+  usage: "usage",
+  methodology: "methodology",
+  diagnostic: "diagnostic",
+  checklist: "checklist",
+  warning: "warning",
+  notice: "notice",
+  caution: "caution",
+  misuse: "misuse",
+  assumption: "assumption",
+  limitation: "limitation",
+  scope: "scope",
+  uncertainty: "uncertainty",
+  disclosure: "disclosure",
+  ai: "disclosure",
+  responsibility: "responsibility",
+  reflexive: "reflexive",
+  breadcrumb: "breadcrumb",
+  navigation: "navigation",
+  orientation: "navigation",
+  transition: "transition",
+  prelude: "prelude",
+  closing: "closing",
+};
+
+export function buildSkosBlockAttributes(classes: string[] = []): string {
+  if (!classes.length) return "";
+  let deliverySlug: string | null = null;
+  const modifierSlugs: string[] = [];
+  const hasInsight = classes.includes("insight");
+  const hasMajor = classes.includes("major");
+
+  for (const raw of classes) {
+    const cls = raw.toLowerCase();
+    const dSlug = GHOST_DELIVERY_SLUGS[cls];
+    if (dSlug) {
+      if (!deliverySlug) {
+        deliverySlug = dSlug;
+      } else if (dSlug === "bridge" && deliverySlug === "note" && !modifierSlugs.includes("bridge")) {
+        modifierSlugs.push("bridge");
+      }
+    } else if (cls === "insight" && hasInsight && hasMajor) {
+      if (!modifierSlugs.includes("insight-major")) modifierSlugs.push("insight-major");
+    } else if (cls === "major" && hasInsight) {
+      // handled above as insight-major
+    } else {
+      const mSlug = GHOST_MODIFIER_SLUGS[cls];
+      if (mSlug && !modifierSlugs.includes(mSlug)) {
+        modifierSlugs.push(mSlug);
+      }
+    }
+  }
+
+  const conceptSlugs = [...(deliverySlug ? [deliverySlug] : []), ...modifierSlugs];
+  const classAttr = `class="${classes.join(" ")}"`;
+  if (!conceptSlugs.length) return classAttr;
+
+  const urns = conceptSlugs.map((s) => `urn:iasp:concept:${s}`);
+  const termUrls = conceptSlugs.map((s) => `https://vocabulary.majerus.us/api/schemes/iasp/slugs/${s}`);
+  const primaryUrn = urns[urns.length - 1];
+
+  const parts = [
+    classAttr,
+    `vocab="http://www.w3.org/2004/02/skos/core#"`,
+    `typeof="Concept"`,
+    `resource="${primaryUrn}"`,
+  ];
+  if (deliverySlug) parts.push(`data-iasp-delivery="${deliverySlug}"`);
+  if (modifierSlugs.length) parts.push(`data-iasp-modifiers="${modifierSlugs.join(" ")}"`);
+  parts.push(`data-iasp-concepts="${urns.join(" ")}"`);
+  parts.push(`data-iasp-terms="${termUrls.join(" ")}"`);
+  return parts.join(" ");
+}
+
+export function wrapGhostBlock(innerMd: string, style: GhostStyle, noBadge = false, classes: string[] = []): string {
+  const skosAttrs = buildSkosBlockAttributes(classes);
+  const opened = `<div ${skosAttrs ? `${skosAttrs} ` : ""}style="${CONTAINER_CSS(style)}">`;
   let header: string;
   if (noBadge) {
     header = `\n${opened}`;
@@ -332,7 +452,9 @@ export function injectAiDisclosures(
   const variantKey = (metadata.disclosure_variant ?? "ai").trim().toLowerCase();
   const style = NOTE_VARIANT_SPECS[variantKey]?.ghost ?? NOTE_VARIANT_SPECS.ai.ghost;
   const wrapped =
-    mode === "md" ? wrapMarkdownBlock(lines.join("\n\n"), style) : wrapGhostBlock(lines.join("\n\n"), style);
+    mode === "md"
+      ? wrapMarkdownBlock(lines.join("\n\n"), style)
+      : wrapGhostBlock(lines.join("\n\n"), style, false, ["note", variantKey]);
 
   const bodyLines = body.split(/\r?\n/);
   let insertAt = bodyLines.length;
@@ -369,7 +491,10 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
   const baseDir = options.baseDir ?? rootDir;
   const stage = options.stage ?? "final";
   const mode = options.mode ?? "ghost";
-  const wrapBlock = mode === "md" ? wrapMarkdownBlock : wrapGhostBlock;
+  const wrapBlock = (innerMd: string, style: GhostStyle, noBadge = false, blockClasses: string[] = []) =>
+    mode === "md"
+      ? wrapMarkdownBlock(innerMd, style, noBadge)
+      : wrapGhostBlock(innerMd, style, noBadge, blockClasses);
   const { frontmatter, bodyLines } = extractFrontmatter(markdown);
   const meta = { ...frontmatter, ...(options.metadata ?? {}) };
 
@@ -415,27 +540,27 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
     if (classes.includes("note")) {
       const variant = detectNoteVariantKey(classes);
       const style = NOTE_VARIANT_SPECS[variant]?.ghost ?? NOTE_VARIANT_SPECS.insight.ghost;
-      return wrapBlock(inner, style, noBadge);
+      return wrapBlock(inner, style, noBadge, classes);
     }
 
     if (classes.some((c) => ["sidebar", "sidebar-block", "aside", "sidebar-inline"].includes(c))) {
-      return wrapBlock(inner, SIDEBAR_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, SIDEBAR_GHOST_STYLE, noBadge, classes);
     }
 
     if (classes.includes("callout")) {
-      return wrapBlock(inner, CALLOUT_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, CALLOUT_GHOST_STYLE, noBadge, classes);
     }
 
     if (classes.includes("bridge") || classes.includes("bridgehead")) {
-      return wrapBlock(inner, BRIDGE_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, BRIDGE_GHOST_STYLE, noBadge, classes);
     }
 
     if (classes.includes("example")) {
-      return wrapBlock(inner, EXAMPLE_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, EXAMPLE_GHOST_STYLE, noBadge, classes);
     }
 
     if (classes.includes("definition")) {
-      return wrapBlock(inner, DEFINITION_GHOST_STYLE, noBadge);
+      return wrapBlock(inner, DEFINITION_GHOST_STYLE, noBadge, classes);
     }
 
     if (classes.includes("epigraph") || classes.includes("epigraph-inline")) {

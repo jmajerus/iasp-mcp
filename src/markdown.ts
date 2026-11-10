@@ -571,7 +571,9 @@ export function manageAiDisclosure(args: AiDisclosureToolArgs) {
   if (payload.technical_note) previewLines.push(formatDisclosureLine(payload.technical_note, tokens));
   const variant = (payload.disclosure_variant ?? "ai").toLowerCase();
   const style = NOTE_VARIANT_SPECS[variant]?.ghost ?? NOTE_VARIANT_SPECS.ai.ghost;
-  const previewHtml = previewLines.length ? wrapGhostBlock(previewLines.join("\n\n"), style).trim() : null;
+  const previewHtml = previewLines.length
+    ? wrapGhostBlock(previewLines.join("\n\n"), style, false, ["note", variant]).trim()
+    : null;
 
   return {
     article: relative(rootDir, articlePath) || articlePath,
