@@ -1,4 +1,5 @@
 import type { DB } from "./db.js";
+import { detectToolchain } from "./render.js";
 import {
   BUILD_MODIFIER_SPECS,
   DELIVERY_ROLE_SPECS,
@@ -757,6 +758,7 @@ export function iaspStatus(db: DB) {
   const sets = db
     .prepare("SELECT slug, label, ordered, json_array_length(members) AS count FROM concept_sets ORDER BY slug")
     .all() as { slug: string; label: string; ordered: number; count: number }[];
+  const toolchain = detectToolchain();
 
   return {
     scheme: "iasp",
@@ -770,5 +772,6 @@ export function iaspStatus(db: DB) {
       sets: sets.length,
     },
     sets: sets.map((s) => ({ ...s, ordered: Boolean(s.ordered) })),
+    toolchain,
   };
 }

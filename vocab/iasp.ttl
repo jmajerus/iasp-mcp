@@ -476,7 +476,7 @@ iasp:navigation a skos:Concept ;
     skos:inScheme <urn:iasp:scheme:iasp> ; skos:broader iasp:reader-navigation ;
     skos:prefLabel "navigation" ; skos:altLabel "orientation", "reader navigation note" ;
     skos:notation "navigation"^^cls:pandoc-class ;
-    skos:scopeNote "Build extension (note.navigation, teal ⇢ badge). Reader-navigation breadcrumbs and orientation guides. The docs also list note.orientation for the same purpose, but iasp-semantics.lua has no 'orientation' variant, so it currently renders as a plain note." ;
+    skos:scopeNote "Build extension (note.navigation, teal ⇢ badge). Reader-navigation breadcrumbs and orientation guides (also supports note.orientation as an alias)." ;
     term:slug "navigation" ; term:status "active" .
 
 iasp:transition a skos:Concept ;

@@ -1,7 +1,7 @@
 {
   "log": "b8e1db33-25fc-49ce-93dd-80d332647002",
-  "version": 343,
-  "head": 343,
+  "version": 345,
+  "head": 345,
   "demo": false,
   "schemes": [
     {
@@ -1609,7 +1609,7 @@
         "orientation",
         "reader navigation note"
       ],
-      "scopeNote": "Build extension (note.navigation, teal ⇢ badge). Reader-navigation breadcrumbs and orientation guides. The docs also list note.orientation for the same purpose, but iasp-semantics.lua has no 'orientation' variant, so it currently renders as a plain note.",
+      "scopeNote": "Build extension (note.navigation, teal ⇢ badge). Reader-navigation breadcrumbs and orientation guides (also supports note.orientation as an alias).",
       "status": "active",
       "relations": [
         {
@@ -1630,7 +1630,7 @@
       "scheme": "iasp",
       "sourceUri": "urn:iasp:concept:navigation",
       "created": 342,
-      "changed": 342,
+      "changed": 345,
       "path": "modifier/reader-navigation/navigation",
       "depth": 2,
       "narrower": []
