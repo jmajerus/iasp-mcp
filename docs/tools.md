@@ -77,6 +77,8 @@ Takes `path` or inline `markdown` and checks six authoring rules before Pandoc r
 | `source` | Path to a Markdown file, `"demo"` (`demo/essay-on-attentive-reading.md`), or `"interop"` (`demo/interoperability-essay.md`). |
 | `markdown` | Inline Markdown string to render instead of a file on disk. |
 | `formats` | Array of `"md"`, `"ghost"`, `"html"`, `"pdf"`, `"pdf-print"`, `"epub"`, `"docx"`, `"rtf"` (default `["md", "html", "ghost"]`). |
+| `output_dir` | Where to write the renders. Defaults to the render directory (`IASP_RENDER_DIR`, `build/renders` locally and `/var/lib/iasp-mcp/renders` on the server). A relative path is a subdirectory of it and is refused if it climbs out with `..`; an absolute path is used as given. |
+| `output_basename` | Base filename without extension (defaults to the source file's name). |
 | `stage` | `"final"` (default; renders `.final`, strips `.draft`) or `"draft"` (renders `.draft`, strips `.final`). |
 | `bibliography` | Path to a `.bib` file for Pandoc `--citeproc`. Defaults to the frontmatter `bibliography`. Applies to every format: `md` and `ghost` resolve `[@key, loc]` citations in place and fill the `## References` (or `Bibliography` / `Works Cited`) section; a note-style `csl` turns citations into `[^iasp-cite-N]` footnotes. If citations are present but no bibliography is available, `md` and `ghost` leave them as written and return a warning. |
 | `bibtex_content` | Inline BibTeX entries (e.g. from `zotero_export_bibliography` or `corpus_cite_passage`) for `--citeproc` when calling `render_document` over the remote MCP portal. |

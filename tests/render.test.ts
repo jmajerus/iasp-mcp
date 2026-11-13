@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { detectToolchain, renderDocument } from "../src/render.js";
+import { detectToolchain, renderDocument, resolveOutputDir } from "../src/render.js";
 
 describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
   it("renders the demo essay to clean Markdown (md), Ghost Markdown, and standalone HTML, respecting final vs draft stage", async () => {
@@ -126,4 +126,29 @@ describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
       rmSync(tmp, { recursive: true, force: true });
     }
   }, 60_000);
+});
+
+describe("render output directory", () => {
+  it("resolves a relative output_dir inside IASP_RENDER_DIR and refuses '..' escapes", async () => {
+    const base = mkdtempSync(join(tmpdir(), "iasp-outdir-"));
+    const previous = process.env.IASP_RENDER_DIR;
+    process.env.IASP_RENDER_DIR = base;
+    try {
+      expect(resolveOutputDir("/opt/iasp-mcp/current")).toBe(base);
+      expect(resolveOutputDir("/opt/iasp-mcp/current", "glass/office")).toBe(join(base, "glass/office"));
+      expect(resolveOutputDir("/opt/iasp-mcp/current", "a/../b")).toBe(join(base, "b"));
+      expect(resolveOutputDir("/opt/iasp-mcp/current", "/srv/elsewhere")).toBe("/srv/elsewhere");
+      expect(() => resolveOutputDir("/opt/iasp-mcp/current", "../outside")).toThrow(/escapes the render directory/);
+      expect(() => resolveOutputDir("/opt/iasp-mcp/current", "a/../../outside")).toThrow(/escapes the render directory/);
+
+      const build = await renderDocument({ markdown: "# T\n\nBody.\n", formats: ["md"], outputDir: "verify", outputBasename: "t" });
+      expect(existsSync(join(base, "verify", "t.md"))).toBe(true);
+      expect(build.artifacts[0].output_path).toBe(join(base, "verify", "t.md"));
+      await expect(renderDocument({ markdown: "x", formats: ["md"], outputDir: "../escape" })).rejects.toThrow(/escapes/);
+    } finally {
+      if (previous === undefined) delete process.env.IASP_RENDER_DIR;
+      else process.env.IASP_RENDER_DIR = previous;
+      rmSync(base, { recursive: true, force: true });
+    }
+  });
 });

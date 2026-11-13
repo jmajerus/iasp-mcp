@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { basename, dirname, extname, relative, resolve } from "node:path";
+import { basename, dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { PROJECT_ROOT } from "./db.js";
 import { resolveCitations } from "./citeproc.js";
 import { type AiDisclosureMetadata, extractFrontmatter, renderCleanMarkdown, renderGhostMarkdown } from "./ghost.js";
@@ -97,12 +97,28 @@ export interface RenderedArtifact {
 
 const PANDOC_READER = "markdown+citations+fancy_lists+fenced_divs+header_attributes+link_attributes+smart";
 
+/**
+ * Where renders are written. The base is IASP_RENDER_DIR (default `build/renders` under the project root).
+ * A relative `outputDir` is a subdirectory of that base and may not climb out of it with `..`;
+ * an absolute `outputDir` is used as given.
+ */
+export function resolveOutputDir(rootDir: string, outputDir?: string): string {
+  const base = resolve(rootDir, process.env.IASP_RENDER_DIR ?? "build/renders");
+  if (!outputDir?.trim()) return base;
+  if (isAbsolute(outputDir)) return resolve(outputDir);
+  const target = resolve(base, outputDir);
+  const rel = relative(base, target);
+  if (rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+    throw new ToolError(`output_dir '${outputDir}' escapes the render directory (${base}); use a subdirectory or an absolute path.`);
+  }
+  return target;
+}
+
 export async function renderDocument(options: RenderDocumentOptions = {}) {
   const rootDir = options.rootDir ?? PROJECT_ROOT;
   const formats: RenderFormat[] = options.formats?.length ? options.formats : ["md", "html", "ghost"];
   const stage = options.stage ?? "final";
-  const defaultOutDir = process.env.IASP_RENDER_DIR ?? "build/renders";
-  const outDir = resolve(rootDir, options.outputDir ?? defaultOutDir);
+  const outDir = resolveOutputDir(rootDir, options.outputDir);
   mkdirSync(outDir, { recursive: true });
 
   let inputPath: string;
