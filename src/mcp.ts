@@ -167,7 +167,10 @@ export function createServer(db: DB): McpServer {
         output_dir: z.string().optional().describe("Output directory (default: build/renders)"),
         output_basename: z.string().optional().describe("Base filename without extension"),
         stage: z.enum(["final", "draft"]).optional().describe("Build stage: 'final' (default, hides .draft) or 'draft' (shows .draft, hides .final)"),
-        bibliography: z.string().optional().describe("Optional path to a .bib bibliography file for --citeproc"),
+        bibliography: z
+          .string()
+          .optional()
+          .describe("Optional path to a .bib bibliography file for --citeproc (applies to every format, including md and ghost; defaults to the frontmatter 'bibliography')"),
         bibtex_content: z
           .string()
           .optional()
@@ -179,6 +182,10 @@ export function createServer(db: DB): McpServer {
         optimize_pdf: z.boolean().optional().describe("Linearize PDF with qpdf when available (default true)"),
         validate_epub: z.boolean().optional().describe("Run epubcheck on generated EPUB when available (default false)"),
         return_content: z.boolean().optional().describe("Include rendered text content in the response for 'md', 'ghost', and 'html' (default false)"),
+        keep_title_h1: z
+          .boolean()
+          .optional()
+          .describe("Ghost only: keep the body's leading '# Title' heading (default false; it is stripped because Ghost shows the post title separately)"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
@@ -192,6 +199,7 @@ export function createServer(db: DB): McpServer {
       optimize_pdf,
       validate_epub,
       return_content,
+      keep_title_h1,
       ...rest
     }) =>
       runAsync(() =>
@@ -212,6 +220,7 @@ export function createServer(db: DB): McpServer {
           optimizePdf: optimize_pdf,
           validateEpub: validate_epub,
           returnContent: return_content,
+          keepTitleH1: keep_title_h1,
         }),
       ),
   );

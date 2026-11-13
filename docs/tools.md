@@ -60,12 +60,13 @@ Takes `path` or inline `markdown`. Returns:
 
 ### `validate_markdown`
 
-Takes `path` or inline `markdown` and checks five authoring rules before Pandoc runs:
+Takes `path` or inline `markdown` and checks six authoring rules before Pandoc runs:
 1. **Fence balance (`unclosed-fence`, `extra-closer`)**: Every opening `:::` fence must have a matching closing `:::` on its own line.
 2. **Sidebar heading levels (`sidebar-h1`)**: Warns if a level-1 heading (`# Title`) is used inside `.sidebar` or `.aside` (which breaks XeLaTeX `mdframed` badge placement; use `##` or deeper).
 3. **Nested shorthand with attributes (`nested-shorthand`)**: Warns when a shorthand fence with attributes is nested inside an outer div without curly braces `{.class}`.
 4. **Vocabulary check (`unknown-class`, `retired-term`, `alt-label-class`, `unstyled-note-modifier`)**: Checks every class token against the live `iasp` scheme from `terminology-mcp`.
 5. **Include existence (`missing-include`)**: Verifies that every `.include` block specifies a `path` or `dir` that exists.
+6. **Epigraph blockquotes (`epigraph-blockquote`)**: Warns when lines inside a `::: {.epigraph}` fence start with `> `. The epigraph is already a quotation, so the `>` nests a second blockquote in HTML, PDF, and EPUB. The Ghost and md exporters drop that one `>` level.
 
 ## Rendering & workflow tools
 
@@ -77,12 +78,13 @@ Takes `path` or inline `markdown` and checks five authoring rules before Pandoc 
 | `markdown` | Inline Markdown string to render instead of a file on disk. |
 | `formats` | Array of `"md"`, `"ghost"`, `"html"`, `"pdf"`, `"pdf-print"`, `"epub"`, `"docx"`, `"rtf"` (default `["md", "html", "ghost"]`). |
 | `stage` | `"final"` (default; renders `.final`, strips `.draft`) or `"draft"` (renders `.draft`, strips `.final`). |
-| `bibliography` | Path to a `.bib` file for Pandoc `--citeproc`. |
+| `bibliography` | Path to a `.bib` file for Pandoc `--citeproc`. Defaults to the frontmatter `bibliography`. Applies to every format: `md` and `ghost` resolve `[@key, loc]` citations in place and fill the `## References` (or `Bibliography` / `Works Cited`) section; a note-style `csl` turns citations into `[^iasp-cite-N]` footnotes. If citations are present but no bibliography is available, `md` and `ghost` leave them as written and return a warning. |
 | `bibtex_content` | Inline BibTeX entries (e.g. from `zotero_export_bibliography` or `corpus_cite_passage`) for `--citeproc` when calling `render_document` over the remote MCP portal. |
 | `csl` | Optional `.csl` citation style path. |
 | `ai_disclosure`, `technical_note`, `disclosure_variant` | Inline AI disclosure metadata when rendering inline Markdown over remote MCP without a local `.ai.json` sidecar. |
 | `optimize_pdf` | Linearize generated PDFs with `qpdf --linearize` when available (`true` by default). |
 | `validate_epub` | Validate generated EPUBs with `epubcheck` (`false` by default; `true` in `npm run demo`). |
 | `return_content` | Include the rendered text in the tool response for `"md"`, `"ghost"`, and `"html"`. |
+| `keep_title_h1` | `ghost` only: keep the body's leading `# Title` heading. By default it is stripped, because Ghost shows the post title from its own title field. |
 
 The response includes both `artifacts` (format, output path, byte size, warnings, linearization/epubcheck flags) and `provenance` (the resolved `quotes` and external `concepts` manifest bound into the output).

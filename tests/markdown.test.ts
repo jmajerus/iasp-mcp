@@ -52,6 +52,15 @@ describe("markdown inspection, validation, directory wrapping, and AI disclosure
     expect(codes).toContain("unclosed-fence");
   });
 
+  it("warns when an epigraph fence contains '>' blockquote lines", () => {
+    const db = openDb(":memory:");
+    const res = validateMarkdown(db, {
+      markdown: ["::: {.epigraph}", "> The more strictly we are watched.", ">", "> — Bentham", ":::"].join("\n"),
+    });
+    const issue = res.issues.find((i) => i.code === "epigraph-blockquote");
+    expect(issue).toMatchObject({ severity: "warning", line: 2 });
+  });
+
   it("wraps files by directory and manages .ai.json disclosure sidecars", () => {
     const tmp = mkdtempSync(join(tmpdir(), "iasp-mcp-test-"));
     try {

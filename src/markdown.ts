@@ -17,6 +17,7 @@ import { parseQuoteMarkerComment, splitConceptList } from "./provenance.js";
 import {
   BUILD_MODIFIER_SPECS,
   DIR_WRAPPER_MAP,
+  NOTE_VARIANT_COUNT,
   NOTE_VARIANT_SPECS,
   STANDALONE_MODIFIER_BLOCKS,
 } from "./rendering-profile.js";
@@ -49,7 +50,8 @@ export interface ValidationIssue {
     | "alt-label-class"
     | "nested-shorthand"
     | "missing-include"
-    | "unstyled-note-modifier";
+    | "unstyled-note-modifier"
+    | "epigraph-blockquote";
   line: number;
   message: string;
   suggestion?: string;
@@ -355,8 +357,23 @@ export function validateMarkdown(
             severity: "info",
             code: "unstyled-note-modifier",
             line: node.startLine,
-            message: `Note block on line ${node.startLine} uses modifier(s) (${classified.modifiers.join(", ")}) outside the 22 styled note-variants.`,
+            message: `Note block on line ${node.startLine} uses modifier(s) (${classified.modifiers.join(", ")}) outside the ${NOTE_VARIANT_COUNT} styled note-variants.`,
             suggestion: "It will render as a plain note box; add .badge if you want a labeled header or choose a member of the note-variants set.",
+          });
+        }
+      }
+
+      if (node.classes.includes("epigraph") || node.classes.includes("epigraph-inline")) {
+        const quoted = node.children.find(
+          (c): c is Extract<AstNode, { kind: "text" }> => c.kind === "text" && /^\s*>/.test(c.text),
+        );
+        if (quoted) {
+          issues.push({
+            severity: "warning",
+            code: "epigraph-blockquote",
+            line: quoted.line,
+            message: `Epigraph block on line ${node.startLine} contains '>' blockquote lines (first on line ${quoted.line}); the epigraph is already rendered as a quotation, so the '>' nests a second blockquote in HTML, PDF, and EPUB.`,
+            suggestion: "Write the epigraph lines without the leading '> ' inside the ::: {.epigraph} fence.",
           });
         }
       }

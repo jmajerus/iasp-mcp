@@ -68,7 +68,7 @@ Having seen how delivery roles and modifiers compose on individual blocks, we ca
 
 ## 3. Note Variants and Epistemic Stance
 
-While any Axis B modifier may compose with any Axis A delivery role, the build pipeline recognizes twenty-two `note-variants` (tracked as a profile set in `terminology-mcp`), each with its own visual cadence:
+While any Axis B modifier may compose with any Axis A delivery role, the build pipeline recognizes twenty-three `note-variants` (tracked as a profile set in `terminology-mcp`), each with its own visual cadence:
 
 ::: note.insight.major
 **Taxonomy as a living replica:** Because `iasp-mcp` follows `terminology-mcp`'s numbered changelog for the `iasp` scheme, adding or refining a modifier in `terminology-mcp` propagates automatically to the local SQLite store, MCP lookup tools, and Markdown validator.

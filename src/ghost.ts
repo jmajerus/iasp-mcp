@@ -421,7 +421,11 @@ export function wrapGhostBlock(
 }
 
 export function wrapGhostEpigraph(innerMd: string, classes: string[] = ["epigraph"], extras: BlockProvenanceExtras = {}): string {
-  const lines = innerMd.trim().split(/\r?\n/);
+  // The epigraph is already rendered as a blockquote; drop an author-written "> " level so it doesn't nest.
+  const lines = innerMd
+    .trim()
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^(\s*)>[ \t]?/, "$1"));
   const quoted = lines.map((l) => (l.trim() ? `> ${l}` : ">")).join("\n");
   const skosAttrs = buildSkosBlockAttributes(classes, extras);
   if (skosAttrs && (extras.quoteInfo || (extras.attrs && (extras.attrs.concepts || extras.attrs.concept)))) {
@@ -563,6 +567,23 @@ export interface GhostRenderOptions {
   metadata?: Record<string, string>;
   aiMetadata?: AiDisclosureMetadata;
   provenanceManifest?: ProvenanceManifest;
+  /** Ghost mode only: keep the leading `# Title` H1 (default false, since Ghost's title field already shows it). */
+  keepTitleH1?: boolean;
+}
+
+/** Remove a level-1 ATX heading when it is the first content line (blank lines and HTML comments may precede it). */
+export function stripLeadingTitleH1(body: string): string {
+  const lines = body.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (!t || /^<!--.*-->$/.test(t)) continue;
+    if (/^#[ \t]+\S/.test(t)) {
+      const drop = i + 1 < lines.length && !lines[i + 1].trim() ? 2 : 1;
+      lines.splice(i, drop);
+    }
+    break;
+  }
+  return lines.join("\n");
 }
 
 export function renderGhostMarkdown(markdown: string, options: GhostRenderOptions = {}): string {
@@ -740,7 +761,8 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
     }
   };
 
-  const renderedBody = renderNodes(nodes, baseDir);
+  const renderedNodes = renderNodes(nodes, baseDir);
+  const renderedBody = mode === "ghost" && !options.keepTitleH1 ? stripLeadingTitleH1(renderedNodes) : renderedNodes;
   const withDisclosures = options.aiMetadata
     ? injectAiDisclosures(renderedBody, options.aiMetadata, mode)
     : renderedBody;

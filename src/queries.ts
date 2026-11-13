@@ -3,6 +3,7 @@ import { detectToolchain } from "./render.js";
 import {
   BUILD_MODIFIER_SPECS,
   DELIVERY_ROLE_SPECS,
+  NOTE_VARIANT_COUNT,
   NOTE_VARIANT_SPECS,
   STANDALONE_MODIFIER_BLOCKS,
 } from "./rendering-profile.js";
@@ -427,7 +428,7 @@ export function composeIntent(db: DB, args: ComposeIntentArgs) {
     }
     if (!resolvedNoteVariant && modifierTerms.length > 0) {
       warnings.push(
-        `Modifier(s) ${modifierTerms.map((m) => `\`${m.slug}\``).join(", ")} are valid IASP modifiers, but not in the 22 styled \`note-variants\` set; this block will render as a plain note box unless paired with a styled note variant or \`.badge\`.`,
+        `Modifier(s) ${modifierTerms.map((m) => `\`${m.slug}\``).join(", ")} are valid IASP modifiers, but not in the ${NOTE_VARIANT_COUNT} styled \`note-variants\` set; this block will render as a plain note box unless paired with a styled note variant or \`.badge\`.`,
       );
     }
   }
@@ -544,7 +545,7 @@ export function getAuthoringGuide(db: DB, topic: GuideTopic = "overview") {
     modifiers:
       (db.prepare("SELECT COUNT(*) FROM terms WHERE axis = 'modifier' AND notations != '[]' AND status = 'active'").pluck().get() as number) ??
       0,
-    noteVariants: Object.keys(NOTE_VARIANT_SPECS).filter((k) => k !== "orientation" && k !== "ai").length,
+    noteVariants: NOTE_VARIANT_COUNT,
   };
 
   const guides: Record<GuideTopic, { title: string; summary: string; markdown: string }> = {
@@ -576,7 +577,7 @@ Unmarked prose is always valid and assumed to be part of the main narrative flow
 | Full sidebar | \`::: sidebar.sidebar-block\` | \`::: {.sidebar .sidebar-block}\` | Full-width box with \`SIDEBAR\` badge. Use \`##\`+ headings inside. |
 | Inline sidebar | \`::: sidebar-inline\` | \`::: {.sidebar-inline}\` | Compact inline box with \`🗒\` glyph. Add \`.glyph-top\` to stack glyph. |
 | Callout | \`::: callout\` | \`::: {.callout}\` | Light left-border annotation frame. |
-| Note variant | \`::: note.<variant>\` | \`::: {.note .<variant>}\` | 22 styled note variants (see \`note-variants\` topic). |
+| Note variant | \`::: note.<variant>\` | \`::: {.note .<variant>}\` | ${NOTE_VARIANT_COUNT} styled note variants (see \`note-variants\` topic). |
 | Bridge | \`::: bridge\` | \`::: {.bridge}\` | Lavender transitional block between major sections. |
 | Example | \`::: example\` | \`::: {.example}\` | Blue-accented illustration box. |
 | Definition | \`::: definition\` | \`::: {.definition}\` | Green-accented glossary/term definition box. |
@@ -585,7 +586,7 @@ Unmarked prose is always valid and assumed to be part of the main narrative flow
     },
     "note-variants": {
       title: "Styled Note Variants (note.<variant>)",
-      summary: "The 22 note variants recognized by the Lua filter, LaTeX box-note.tex, CSS, and Ghost exporter.",
+      summary: `The ${NOTE_VARIANT_COUNT} note variants recognized by the Lua filter, LaTeX box-note.tex, CSS, and Ghost exporter.`,
       markdown: `# Styled Note Variants (\`note.<variant>\`)
 
 | Composition | Glyph / Header | Purpose |

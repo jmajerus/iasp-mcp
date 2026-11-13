@@ -44,7 +44,8 @@ describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
     const demoGhostRes = await fetch(`${baseUrl}/demo/ghost`);
     expect(demoGhostRes.status).toBe(200);
     const demoGhost = await demoGhostRes.text();
-    expect(demoGhost).toContain("Naming What Prose Is Doing");
+    expect(demoGhost).toContain("An End-to-End Demonstration");
+    expect(demoGhost).not.toMatch(/^# Naming What Prose Is Doing/m); // Ghost carries the title in its own field
 
     // Verify public tunnel requests (with Cloudflare headers and no Access token) can read /demo/* and /interop/*
     const proxiedDemoRes = await fetch(`${baseUrl}/demo/html`, {

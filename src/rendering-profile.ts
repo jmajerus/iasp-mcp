@@ -321,6 +321,9 @@ export const NOTE_VARIANT_SPECS: Record<string, NoteVariantRenderSpec> = {
   },
 };
 
+/** Count of styled `note-variants` (excludes the `orientation` alias and the `ai` disclosure style). */
+export const NOTE_VARIANT_COUNT = Object.keys(NOTE_VARIANT_SPECS).filter((k) => k !== "orientation" && k !== "ai").length;
+
 export const DELIVERY_ROLE_SPECS: Record<string, DeliveryRoleRenderSpec> = {
   "front-matter": {
     slug: "front-matter",
@@ -426,7 +429,7 @@ export const DELIVERY_ROLE_SPECS: Record<string, DeliveryRoleRenderSpec> = {
     braceExample: "::: {.note .insight}\n...\n:::",
     shorthandExample: "::: note.insight\n...\n:::",
     epubType: "note",
-    latexEnv: "noteboxplain (or notebox<variant> for the 22 note-variants)",
+    latexEnv: `noteboxplain (or notebox<variant> for the ${NOTE_VARIANT_COUNT} note-variants)`,
     ghostBehavior: "Rendered as a color-coded HTML <div> matching the composed note.<variant>.",
   },
   footnote: {

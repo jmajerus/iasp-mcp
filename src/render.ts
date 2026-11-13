@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, relative, resolve } from "node:path";
 import { PROJECT_ROOT } from "./db.js";
+import { resolveCitations } from "./citeproc.js";
 import { type AiDisclosureMetadata, extractFrontmatter, renderCleanMarkdown, renderGhostMarkdown } from "./ghost.js";
 import { buildProvenanceManifest, type ProvenanceManifest } from "./provenance.js";
 import { ToolError } from "./queries.js";
@@ -80,6 +81,8 @@ export interface RenderDocumentOptions {
   validateEpub?: boolean;
   returnContent?: boolean;
   rootDir?: string;
+  /** Ghost only: keep the body's leading `# Title` H1 (stripped by default because Ghost has its own title field). */
+  keepTitleH1?: boolean;
 }
 
 export interface RenderedArtifact {
@@ -167,15 +170,46 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   const artifacts: RenderedArtifact[] = [];
 
   try {
+    let bibliographyPath: string | undefined;
+    if (tempBibPath) {
+      bibliographyPath = tempBibPath;
+    } else if (options.bibliography) {
+      bibliographyPath = resolve(rootDir, options.bibliography);
+      if (!existsSync(bibliographyPath)) throw new ToolError(`Bibliography file not found: ${options.bibliography}`);
+    } else if (frontmatter.bibliography) {
+      bibliographyPath = [
+        resolve(dirname(inputPath), frontmatter.bibliography),
+        resolve(rootDir, frontmatter.bibliography),
+        resolve(rootDir, "demo", frontmatter.bibliography),
+      ].find((p) => existsSync(p));
+    }
+    let cslPath: string | undefined;
+    if (options.csl) {
+      cslPath = resolve(rootDir, options.csl);
+      if (!existsSync(cslPath)) throw new ToolError(`CSL file not found: ${options.csl}`);
+    }
+
+    const citeOptions = {
+      bibliographyPath,
+      cslPath,
+      lang: docLang,
+      cwd: rootDir,
+      pandocAvailable: toolchain.pandoc.available,
+    };
+
     for (const format of formats) {
       if (format === "md") {
-        const mdContent = renderCleanMarkdown(rawMarkdown, {
-          rootDir,
-          baseDir: dirname(inputPath),
-          stage,
-          aiMetadata,
-          provenanceManifest,
-        });
+        const cited = resolveCitations(
+          renderCleanMarkdown(rawMarkdown, {
+            rootDir,
+            baseDir: dirname(inputPath),
+            stage,
+            aiMetadata,
+            provenanceManifest,
+          }),
+          citeOptions,
+        );
+        const mdContent = cited.content;
         const outPath = resolve(outDir, `${baseStem}.md`);
         writeFileSync(outPath, mdContent, "utf8");
         const displayPath = relative(rootDir, outPath);
@@ -184,20 +218,25 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
           format: "md",
           output_path: cleanOutputPath,
           bytes: Buffer.byteLength(mdContent, "utf8"),
-          warnings: [],
+          warnings: cited.warnings,
           ...(options.returnContent ? { content: mdContent } : {}),
         });
         continue;
       }
 
       if (format === "ghost") {
-        const ghostContent = renderGhostMarkdown(rawMarkdown, {
-          rootDir,
-          baseDir: dirname(inputPath),
-          stage,
-          aiMetadata,
-          provenanceManifest,
-        });
+        const cited = resolveCitations(
+          renderGhostMarkdown(rawMarkdown, {
+            rootDir,
+            baseDir: dirname(inputPath),
+            stage,
+            aiMetadata,
+            provenanceManifest,
+            keepTitleH1: options.keepTitleH1,
+          }),
+          citeOptions,
+        );
+        const ghostContent = cited.content;
         const outPath = resolve(outDir, `${baseStem}-ghost.md`);
         writeFileSync(outPath, ghostContent, "utf8");
         const displayPath = relative(rootDir, outPath);
@@ -206,7 +245,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
           format: "ghost",
           output_path: cleanOutputPath,
           bytes: Buffer.byteLength(ghostContent, "utf8"),
-          warnings: [],
+          warnings: cited.warnings,
           ...(options.returnContent ? { content: ghostContent } : {}),
         });
         continue;
@@ -244,28 +283,10 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         args.push("-M", `provenance-manifest=${tempProvenancePath}`);
       }
 
-      if (tempBibPath) {
-        args.push("--citeproc", `--bibliography=${tempBibPath}`);
-      } else if (options.bibliography) {
-        const bibPath = resolve(rootDir, options.bibliography);
-        if (!existsSync(bibPath)) throw new ToolError(`Bibliography file not found: ${options.bibliography}`);
-        args.push("--citeproc", `--bibliography=${bibPath}`);
-      } else if (frontmatter.bibliography) {
-        const bibRel = resolve(dirname(inputPath), frontmatter.bibliography);
-        const bibRoot = resolve(rootDir, frontmatter.bibliography);
-        const bibDemo = resolve(rootDir, "demo", frontmatter.bibliography);
-        const resolvedBib = existsSync(bibRel)
-          ? bibRel
-          : existsSync(bibRoot)
-            ? bibRoot
-            : existsSync(bibDemo)
-              ? bibDemo
-              : null;
-        if (resolvedBib) args.push("--citeproc", `--bibliography=${resolvedBib}`);
+      if (bibliographyPath) {
+        args.push("--citeproc", `--bibliography=${bibliographyPath}`);
       }
-      if (options.csl) {
-        const cslPath = resolve(rootDir, options.csl);
-        if (!existsSync(cslPath)) throw new ToolError(`CSL file not found: ${options.csl}`);
+      if (cslPath) {
         args.push(`--csl=${cslPath}`);
       } else if (frontmatter["link-citations"] === "true") {
         args.push("-M", "link-citations=true");
