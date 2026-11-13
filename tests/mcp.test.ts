@@ -70,7 +70,7 @@ describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
     expect(proxiedAdminRes.status).toBe(401);
   });
 
-  it("exposes all 10 MCP tools over Streamable HTTP /mcp", async () => {
+  it("exposes all 9 MCP tools over Streamable HTTP /mcp", async () => {
     const client = new Client({ name: "iasp-test-client", version: "1.0.0" });
     const transport = new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`));
     await client.connect(transport);
@@ -82,12 +82,10 @@ describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
         "ai_disclosure",
         "compose_intent",
         "get_authoring_guide",
-        "get_term",
-        "iasp_status",
         "inspect_markdown",
-        "list_sets",
         "list_terms",
         "render_document",
+        "status",
         "validate_markdown",
         "wrap_by_directory",
       ]);

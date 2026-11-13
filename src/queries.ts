@@ -177,8 +177,18 @@ export function listTerms(db: DB, options: ListTermsOptions = {}) {
   }
 
   const items = filtered.map((r) => formatTermSummary(r, setMap));
+  const setSummaries = (db
+    .prepare("SELECT slug, label, description, ordered, json_array_length(members) AS member_count FROM concept_sets ORDER BY slug")
+    .all() as { slug: string; label: string; description: string | null; ordered: number; member_count: number }[]).map((s) => ({
+    slug: s.slug,
+    label: s.label,
+    description: s.description,
+    ordered: Boolean(s.ordered),
+    member_count: s.member_count,
+  }));
   return {
     total: items.length,
+    sets: setSummaries,
     terms: items,
   };
 }

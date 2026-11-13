@@ -8,9 +8,7 @@ import {
   ToolError,
   composeIntent,
   getAuthoringGuide,
-  getTerm,
   iaspStatus,
-  listSets,
   listTerms,
 } from "./queries.js";
 import { RENDER_FORMATS, renderDocument } from "./render.js";
@@ -22,11 +20,11 @@ IASP gives authors names for what a passage of long-form nonfiction or an essay 
 - Axis A (delivery-role): placement relative to the main narrative flow (front-matter, series, part, chapter, section, interlude, bridge, sidebar, sidebar-inline, callout, note, footnote, endnotes, epigraph, epigraph-inline, appendix, back-matter).
 - Axis B (modifier): rhetorical move, expository support, reader stance, or reader navigation cue (thesis, claim, counterpoint, qualification, implication, synthesis, integration, contrast, reflection, provocation, example, case-study, background, context, definition, gloss, analogy, insight, insight.major, idea, usage, methodology, diagnostic, checklist, warning, notice, caution, misuse, assumption, limitation, scope, uncertainty, disclosure, responsibility, reflexive, breadcrumb, navigation, transition, prelude, closing).
 Terms compose as delivery.modifier (e.g. note.insight, sidebar.example, bridge.reflection, note.insight.major) and are optional: unmarked prose is always valid main-flow text.
-The vocabulary is synced from terminology-mcp's "iasp" concept scheme, which also defines three profile concept sets: "core" (IASP Core §6–7), "delivery-order" (Core delivery roles in reading order), and "note-variants" (the 22 styled note.<variant> modifiers).
+The vocabulary is synced from terminology-mcp's "iasp" concept scheme, which also defines three profile concept sets: "core" (IASP Core §6–7), "delivery-order" (Core delivery roles in reading order), and "note-variants" (the 23 styled note.<variant> modifiers). For general multi-scheme SKOS graph queries or proposing new taxonomy terms, use terminology-mcp's tools; use this server's tools for IASP authoring syntax, validation, and document rendering.
 Typical flow:
-1. Explore or choose intent with list_terms, get_term, list_sets, compose_intent, or get_authoring_guide.
+1. Explore or choose intent with list_terms, compose_intent, or get_authoring_guide.
 2. Check a draft with inspect_markdown and validate_markdown (catches unbalanced ::: fences, level-1 headers inside sidebars, missing .include files, and unknown/retired classes).
-3. Render end to end with render_document (formats: ghost, html, pdf, pdf-print, epub, docx, rtf; pass source: "demo" to build the bundled showcase essay) or manage per-article AI disclosures with ai_disclosure.`;
+3. Render end to end with render_document (formats: md, ghost, html, pdf, pdf-print, epub, docx, rtf; pass source: "demo" or "interop" to build the bundled showcase essays) or manage per-article AI disclosures with ai_disclosure.`;
 
 function json(value: unknown): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
@@ -67,9 +65,9 @@ export function createServer(db: DB): McpServer {
   server.registerTool(
     "list_terms",
     {
-      title: "List IASP terms",
+      title: "List IASP terms and profile sets",
       description:
-        "Browse or search the IASP vocabulary synced from terminology-mcp's 'iasp' scheme. Filter by axis ('delivery-role' or 'modifier'), modifier group ('argument-and-reasoning', 'exposition-and-support', 'reader-signals-and-stance', 'reader-navigation'), concept set ('core', 'delivery-order', 'note-variants'), or query text. Returns each term's slug, Pandoc class notations, scope note, set memberships, and rendering summary.",
+        "Browse or search the IASP authoring vocabulary synced from terminology-mcp's 'iasp' scheme, including the three profile concept sets ('core', 'delivery-order', 'note-variants') and each term's Pandoc class notations and rendering summary. Filter by axis ('delivery-role' or 'modifier'), modifier group ('argument-and-reasoning', 'exposition-and-support', 'reader-signals-and-stance', 'reader-navigation'), concept set ('core', 'delivery-order', 'note-variants'), or query text. (For cross-scheme SKOS graph lookup or term proposals, use terminology-mcp's tools.)",
       inputSchema: {
         axis: z.enum(["delivery-role", "modifier", "any"]).optional().describe("Filter to Axis A (delivery-role) or Axis B (modifier)"),
         group: z
@@ -87,42 +85,16 @@ export function createServer(db: DB): McpServer {
   );
 
   server.registerTool(
-    "get_term",
-    {
-      title: "Get an IASP term",
-      description:
-        "Get full details for one IASP term or build modifier by slug, Pandoc class notation, alternative label, or terminology-mcp term ID (e.g. 'sidebar', 'insight.major', 'methodology', 'layout-fullpage'). Returns definition/scope note, broader/narrower/related/opposite terms, external EPUB/ARIA mappings, and concrete syntax and rendering behavior across EPUB/HTML, XeLaTeX PDF, and Ghost Markdown.",
-      inputSchema: {
-        term: z.string().min(1).describe("Term slug, Pandoc class notation, or ID (e.g. 'note', 'insight', 'insight.major', 'sidebar-inline')"),
-      },
-      annotations: readOnly,
-    },
-    ({ term }) => run(() => getTerm(db, term)),
-  );
-
-  server.registerTool(
-    "list_sets",
-    {
-      title: "List IASP concept sets",
-      description:
-        "List the profile concept sets in the 'iasp' scheme ('core', 'delivery-order', 'note-variants') with their descriptions and expanded member terms.",
-      inputSchema: {},
-      annotations: readOnly,
-    },
-    () => run(() => listSets(db)),
-  );
-
-  server.registerTool(
     "compose_intent",
     {
-      title: "Compose IASP intent",
+      title: "Compose or inspect IASP intent",
       description:
-        "Validate and explain a composed IASP class expression (such as 'note.insight.major', 'sidebar.example', 'bridge.reflection.pre-pagebreak', or delivery + modifiers). Checks every token against the 'iasp' scheme and build modifiers, explains the layered authorial intent, warns on retired or unstyled note modifiers, and returns ready-to-paste Pandoc fenced-div and heading syntax plus how EPUB/HTML, PDF, and Ghost render it.",
+        "Validate and explain a single IASP term/build modifier or a composed class expression (such as 'note.insight.major', 'sidebar.example', 'bridge.reflection.pre-pagebreak', 'layout-fullpage', or delivery + modifiers). Checks every token against the 'iasp' scheme and build modifiers, explains the layered authorial intent, warns on retired or unstyled note modifiers, and returns ready-to-paste Pandoc fenced-div and heading syntax plus how EPUB/HTML, XeLaTeX PDF, and Ghost render it.",
       inputSchema: {
         composition: z
           .string()
           .optional()
-          .describe("Dot-separated or brace class expression, e.g. 'note.insight', 'sidebar.example', or '{.bridge .reflection .pre-pagebreak}'"),
+          .describe("Single term or dot/brace class expression, e.g. 'note.insight', 'sidebar.example', 'layout-fullpage', or '{.bridge .reflection .pre-pagebreak}'"),
         delivery: z.string().optional().describe("Axis A delivery role, e.g. 'note', 'sidebar', 'callout', 'bridge'"),
         modifiers: z.array(z.string()).optional().describe("Axis B modifiers or build hints, e.g. ['insight', 'major'] or ['example', 'nobadge']"),
       },
@@ -286,7 +258,7 @@ export function createServer(db: DB): McpServer {
   );
 
   server.registerTool(
-    "iasp_status",
+    "status",
     {
       title: "IASP server status",
       description:

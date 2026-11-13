@@ -4,17 +4,15 @@
 
 | Tool | Title | What it does |
 |---|---|---|
-| `list_terms` | List IASP terms | Browse or search the `iasp` scheme synced from `terminology-mcp` by axis, modifier group, concept set, status, or query |
-| `get_term` | Get an IASP term | Full concept record, relations, external `epub:type` / DPUB-ARIA links, and concrete syntax and rendering behavior across formats |
-| `list_sets` | List IASP concept sets | The three `iasp` profile concept sets (`core`, `delivery-order`, `note-variants`) and their expanded members |
-| `compose_intent` | Compose IASP intent | Validate and explain a composed class expression (`note.insight.major`, `sidebar.example`, `bridge.reflection.pre-pagebreak`) and return ready-to-paste Pandoc syntax |
+| `list_terms` | List IASP terms and profile sets | Browse or search the `iasp` scheme synced from `terminology-mcp` by axis, modifier group, concept set (`core`, `delivery-order`, `note-variants`), status, or query; includes the profile concept sets summary and each term's Pandoc notations and rendering summary |
+| `compose_intent` | Compose or inspect IASP intent | Validate and explain a single IASP term/build modifier or a composed class expression (`note.insight.major`, `sidebar.example`, `bridge.reflection.pre-pagebreak`, `layout-fullpage`) and return ready-to-paste Pandoc syntax and rendering details |
 | `get_authoring_guide` | Get IASP authoring guide | Topic-scoped reference guide (`overview`, `wrappers`, `note-variants`, `sidebars`, `includes`, `tables`, `pagination`, `stages`, `ai-disclosure`, `ghost`) |
 | `inspect_markdown` | Inspect IASP Markdown | Parse a Markdown file or string into an outline of fenced divs, headings, `.include` targets, quote markers, external concepts, and `{{meta:...}}` placeholders |
 | `validate_markdown` | Validate IASP Markdown | Check for unbalanced `:::` fences, level-1 headings inside sidebars, nested shorthand fences with attributes, missing `.include` files, and unknown/retired classes |
 | `render_document` | Render IASP Markdown | Render a Markdown file, inline Markdown, `"demo"`, or `"interop"` to `md`, `ghost`, `html`, `pdf`, `pdf-print`, `epub`, `docx`, or `rtf`, with automatic SKOS & quote provenance binding |
 | `wrap_by_directory` | Wrap Markdown files by directory | Preview or apply directory-based IASP wrapper fences (`chapters/`, `sidebars/`, `appendices/`, `articles/`) |
 | `ai_disclosure` | Manage article AI disclosure sidecar | Read or update a per-article `<article>.ai.json` sidecar and preview its rendered disclosure block |
-| `iasp_status` | IASP server status | Terminology sync cursor, term and concept-set counts, and local toolchain status |
+| `status` | IASP server status | Terminology sync cursor, term and concept-set counts, and local toolchain status (exposed as `iasp_status` when prefixed by the Cloudflare MCP Portal) |
 
 ## The typical flow
 
@@ -37,13 +35,11 @@ Every argument is optional, and they combine.
 | `status` | `"active"` (default), `"provisional"`, `"retired"`, or `"any"`. |
 | `include_grouping` | Include axis/group container concepts that have no Pandoc class notation of their own (`true` by default). |
 
-### `get_term`
-
-Resolves a single IASP term by slug (`"insight-major"`), Pandoc notation (`"insight.major"`), alternative label (`"orientation"` → `navigation`), or `terminology-mcp` ID (`"t_..."`), or resolves a build modifier (such as `"layout-fullpage"`, `"table-compact"`, `"draft"`). Returns its scope note, broader/narrower/related/opposite connections, external `closeMatch` URIs (`epub:type` SSV, DPUB-ARIA, WAI-ARIA), set memberships, and rendering details across HTML/EPUB, XeLaTeX, and Ghost.
+The response includes `sets` (the `core`, `delivery-order`, and `note-variants` profile sets with their descriptions and member counts) and `terms`. For cross-scheme SKOS graph traversal or proposing new taxonomy terms, use `terminology-mcp`'s tools (`terminology_get_term`, `terminology_get_graph`, `terminology_propose_term`).
 
 ### `compose_intent`
 
-Pass either `composition` (e.g. `"note.insight.major"`, `"sidebar.example"`, `"{.bridge .reflection .pre-pagebreak}"`) or `delivery` + `modifiers`. Returns:
+Pass either `composition` (a single term/build modifier such as `"sidebar"` or `"layout-fullpage"`, or a multi-token expression such as `"note.insight.major"`, `"sidebar.example"`, `"{.bridge .reflection .pre-pagebreak}"`) or `delivery` + `modifiers`. Returns:
 - `valid`: whether every token is a recognized IASP term or build modifier.
 - `delivery_role`, `modifiers`, `build_modifiers`, `unknown_tokens`, and `warnings` (such as retired terms, alternative labels like `orientation`, or modifiers composed with `note` that are outside the 23 styled `note-variants`).
 - `intent_summary`: plain-English explanation of what each layer contributes.
