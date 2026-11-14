@@ -29,7 +29,11 @@ Settings come from `.env` in your local checkout (see [.env.example](../.env.exa
 | `IASP_RENDER_DIR` | `build/renders` | Directory where rendered artifacts are written (`/var/lib/iasp-mcp/renders` on the server). |
 | `IASP_HOST`, `IASP_PORT` | `0.0.0.0`, `8000` | Address and port for the HTTP listener. |
 | `TERMINOLOGY_BASE` | `http://terminology-mcp.localdomain:8000` | `terminology-mcp` endpoint used to follow the `iasp` changelog and resolve external concept URNs; `off` disables network calls and uses the bundled seed. |
-| `QUOTE_BASE` | `http://quote-mcp.localdomain:8000` | `quote-mcp` endpoint used during rendering to enrich `<!-- quote <id> -->` markers with `citekey`, `workKey`, `locator`, and `human-work` concepts; `off` disables live lookup. |
+| `QUOTE_BASE` | `http://quote-mcp.localdomain:8000` | `quote-mcp` endpoint used by `render_document` and `validate_markdown` to enrich `<!-- quote <id> -->` markers with `citekey`, `workKey`, `locator`, and `human-work` concepts, and to check the quoted words and citations against the saved quote; `off` disables live lookup (each marked quote is then reported `unchecked`). |
+| `HOLDINGS_BASE` | `http://holdings-mcp.localdomain:8000` | `holdings-mcp` endpoint (`/api/bibliography`) asked for bibliography entries of cited keys the author did not supply; `off` disables. |
+| `CORPUS_BASE` | `http://corpus-mcp.localdomain:8000` | `corpus-mcp` endpoint (`/api/csl`) asked for CSL entries of Calibre books not filed in Zotero yet; `off` disables. |
+| `IASP_URL` | the request's host (HTTP); none (stdio) | LAN base URL for render artifact `url`s (`<base>/renders/<path>`); `off` disables. |
+| `IASP_PUBLIC_URL` | the request's host, for requests through the tunnel | Public (tunnel) base URL for render artifact `public_url`s; readers need a Cloudflare Access login. `off` disables. |
 | `IASP_TERMS_SYNC` | `on` | When `on`, `serve` polls `terminology-mcp` every 60 seconds and reports subscriber progress as `iasp-mcp`. |
 | `ACCESS_TEAM_DOMAIN` | none | Cloudflare Access team URL (e.g. `https://linkbud.cloudflareaccess.com`) used to verify `Cf-Access-Jwt-Assertion` headers on non-LAN requests. |
 | `AUTHORING_DEPLOY_PASSWORD` | none | SSH / sudo password for the `authoring` deploy user on `iasp-mcp.localdomain`. |
@@ -43,9 +47,9 @@ Settings come from `.env` in your local checkout (see [.env.example](../.env.exa
 - **Services**: `iasp-mcp.service` (the HTTP/MCP server) and `iasp-backup.timer` (nightly SQLite backup at `03:55`, keeping 14 days in `/var/lib/iasp-mcp/backups`).
 - **Files**: The SQLite store (`iasp.db`), rendered demo/output files (`renders/`), backups (`backups/`), and deployment metadata (`deployed.json`) live in `/var/lib/iasp-mcp`. Releases live in `/opt/iasp-mcp/releases/<id>`, with `/opt/iasp-mcp/current` linked to the active release.
 - **Access**:
-  - Direct LAN requests to `http://iasp-mcp.localdomain:8000` have full access to `/`, `/admin`, `/demo/*`, `/interop/*`, `/health`, and `/mcp`.
+  - Direct LAN requests to `http://iasp-mcp.localdomain:8000` have full access to `/`, `/admin`, `/demo/*`, `/interop/*`, `/renders/*`, `/health`, and `/mcp`.
   - Requests through the Cloudflare tunnel allow anonymous read-only browsing on `/`, `/favicon.svg`, `/demo/{html,md,ghost,pdf}`, and `/interop/{html,md,ghost,pdf}`.
-  - `/mcp` and `/admin` through Cloudflare require a verified `Cf-Access-Jwt-Assertion` JWT.
+  - `/mcp`, `/admin`, and `/renders/*` (rendered files, see [render_document](tools.md#renders-by-url)) through Cloudflare require a verified `Cf-Access-Jwt-Assertion` JWT.
 - **CLI on the server**: Log in as `authoring` and run `iasp-mcp <command>` (e.g. `iasp-mcp status`, `iasp-mcp terms`, `iasp-mcp demo`); it runs `/opt/iasp-mcp/current/dist/cli.js` as the `iasp` user with `/etc/iasp-mcp/env`.
 
 ## Deploying
@@ -56,7 +60,7 @@ The **Deploy IASP** button in VS Code's status bar (or `npm run deploy` from the
 |---|---|---|
 | Deploy this checkout | `npm run deploy` | Builds, runs `npm test`, uploads a release tarball, installs production dependencies, migrates the store (with pre-migration backup), syncs `iasp` terms, restarts `iasp-mcp.service`, verifies `/health`, and rolls back on failure. |
 | Deploy this checkout without tests | `npm run deploy -- --skip-tests` | Same as above, skipping the local test run. |
-| Push the server's settings | `npm run deploy -- --env` | Copies `TERMINOLOGY_BASE`, `IASP_TERMS_SYNC`, `ACCESS_TEAM_DOMAIN`, and `IASP_PORT` from `.env` to `/etc/iasp-mcp/env` and restarts. |
+| Push the server's settings | `npm run deploy -- --env` | Copies `TERMINOLOGY_BASE`, `QUOTE_BASE`, `HOLDINGS_BASE`, `CORPUS_BASE`, `IASP_URL`, `IASP_PUBLIC_URL`, `IASP_TERMS_SYNC`, `ACCESS_TEAM_DOMAIN`, and `IASP_PORT` (those set in `.env`) to `/etc/iasp-mcp/env` and restarts. |
 | Provision LXC (one-time) | `npm run deploy -- --provision` | Installs Node 22, Pandoc, XeLaTeX (`texlive-xetex`, `texlive-latex-extra`, Pagella/DejaVu/Noto fonts), `qpdf`, `epubcheck`, creates the `iasp` system user, and sets up directories. |
 
 ## VS Code status bar

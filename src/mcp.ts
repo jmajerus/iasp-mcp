@@ -2,7 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { DB } from "./db.js";
-import { inspectMarkdown, manageAiDisclosure, validateMarkdown, wrapByDirectory } from "./markdown.js";
+import { inspectMarkdown, manageAiDisclosure, wrapByDirectory } from "./markdown.js";
+import { validateMarkdownWithQuotes } from "./quote-check.js";
 import {
   GUIDE_TOPICS,
   ToolError,
@@ -11,7 +12,7 @@ import {
   iaspStatus,
   listTerms,
 } from "./queries.js";
-import { RENDER_FORMATS, renderDocument } from "./render.js";
+import { RENDER_FORMATS, type RenderUrlBases, renderDocument } from "./render.js";
 
 export const VERSION = "0.1.0";
 
@@ -59,7 +60,26 @@ const readOnly = {
   openWorldHint: false,
 } as const;
 
-export function createServer(db: DB): McpServer {
+export interface CreateServerOptions {
+  /** Where rendered files are served (`/renders/...`); artifacts get `url` / `public_url` from these. */
+  renderUrls?: RenderUrlBases;
+}
+
+/**
+ * Render URL bases from settings: IASP_URL (LAN; `off` disables) and IASP_PUBLIC_URL (tunnel; `off`
+ * disables). Unset, they fall back to `fallback` (the host the request came to).
+ */
+export function renderUrlsFromEnv(env: NodeJS.ProcessEnv, fallback: RenderUrlBases = {}): RenderUrlBases {
+  const lanRaw = env.IASP_URL?.trim();
+  const lan = lanRaw?.toLowerCase() === "off" ? undefined : lanRaw || fallback.lan;
+  const pub = env.IASP_PUBLIC_URL?.trim() || fallback.public;
+  return {
+    ...(lan ? { lan: lan.replace(/\/+$/, "") } : {}),
+    ...(pub && pub.toLowerCase() !== "off" ? { public: pub.replace(/\/+$/, "") } : {}),
+  };
+}
+
+export function createServer(db: DB, options: CreateServerOptions = {}): McpServer {
   const server = new McpServer({ name: "iasp-mcp", version: VERSION }, { instructions: INSTRUCTIONS });
 
   server.registerTool(
@@ -137,14 +157,14 @@ export function createServer(db: DB): McpServer {
     {
       title: "Validate IASP Markdown",
       description:
-        "Check a Markdown string or file for common IASP authoring issues before building: (1) unbalanced or unclosed ':::' fences, (2) level-1 headings ('#') inside '.sidebar' / '.aside' blocks (which break XeLaTeX mdframed badges), (3) unknown or retired IASP classes, (4) nested shorthand fences that require brace syntax '{.class}', and (5) missing '.include' target files.",
+        "Check a Markdown string or file for common IASP authoring issues before building: (1) unbalanced or unclosed ':::' fences, (2) level-1 headings ('#') inside '.sidebar' / '.aside' blocks (which break XeLaTeX mdframed badges), (3) unknown or retired IASP classes, (4) nested shorthand fences that require brace syntax '{.class}', (5) missing '.include' target files, and (6) quotes: each <!-- quote <id> --> passage's words against quote-mcp's saved text (a block quote must match word for word; a run-in paragraph must contain the saved words), its citation's citekey and locator against the quote's, and block quotes with no marker. Per-marker results are in 'quotes.checks' (text: matches | differs | unchecked, with the text around the first difference); when quote-mcp is unreachable every marked quote is 'unchecked' with the reason.",
       inputSchema: {
         markdown: z.string().optional().describe("Markdown text to validate"),
         path: z.string().optional().describe("Path to a Markdown file (relative to workspace or absolute)"),
       },
       annotations: readOnly,
     },
-    (args) => run(() => validateMarkdown(db, args)),
+    (args) => runAsync(() => validateMarkdownWithQuotes(db, args)),
   );
 
   server.registerTool(
@@ -152,7 +172,7 @@ export function createServer(db: DB): McpServer {
     {
       title: "Render IASP Markdown",
       description:
-        "Render an IASP Markdown file, inline Markdown string, or the built-in 'demo' showcase to one or more formats ('md' for clean pure Markdown using blockquotes + glyph/label headers with no HTML <div> tags, 'ghost' for Ghost CMS Markdown cards with inline-styled HTML <div> blocks, 'html', 'pdf', 'pdf-print', 'epub', 'docx', 'rtf') using the bundled Pandoc Lua filters, XeLaTeX box environments, CSS stylesheets, and Markdown exporters.",
+        "Render an IASP Markdown file, inline Markdown string, or the built-in 'demo' showcase to one or more formats ('md' for clean pure Markdown using blockquotes + glyph/label headers with no HTML <div> tags, 'ghost' for Ghost CMS Markdown cards with inline-styled HTML <div> blocks, 'html', 'pdf', 'pdf-print', 'epub', 'docx', 'rtf') using the bundled Pandoc Lua filters, XeLaTeX box environments, CSS stylesheets, and Markdown exporters. Each artifact has a 'url' to fetch it from (and 'public_url' through the tunnel, when configured), so content need not be returned inline. Cited keys missing from 'bibtex_content' / 'bibliography' are fetched from Zotero (holdings-mcp) or, for books not filed yet, the Calibre libraries (corpus-mcp); 'bibliography.sources' says where each entry came from and 'bibliography.warnings' flags missing, ambiguous, and unfiled keys. 'provenance.checks' compares each quote marker's passage with quote-mcp's saved text and citation, as validate_markdown does.",
       inputSchema: {
         source: z
           .string()
@@ -177,14 +197,17 @@ export function createServer(db: DB): McpServer {
         bibtex_content: z
           .string()
           .optional()
-          .describe("Inline BibTeX entries (e.g. from zotero_export_bibliography or corpus_cite_passage) for --citeproc when rendering over remote MCP"),
+          .describe("Inline BibTeX entries for --citeproc. Optional: cited keys these lack are fetched from Zotero / the Calibre libraries; entries given here always win"),
         csl: z.string().optional().describe("Optional path to a .csl citation style file"),
         ai_disclosure: z.string().optional().describe("Inline qualitative AI disclosure line to inject in md/ghost outputs"),
         technical_note: z.string().optional().describe("Inline technical note line to inject in md/ghost outputs"),
         disclosure_variant: z.string().optional().describe("Disclosure box style variant (default: 'ai' or 'disclosure')"),
         optimize_pdf: z.boolean().optional().describe("Linearize PDF with qpdf when available (default true)"),
         validate_epub: z.boolean().optional().describe("Run epubcheck on generated EPUB when available (default false)"),
-        return_content: z.boolean().optional().describe("Include rendered text content in the response for 'md', 'ghost', and 'html' (default false)"),
+        return_content: z
+          .boolean()
+          .optional()
+          .describe("Include rendered text content in the response for 'md', 'ghost', and 'html' (default false; fetch the artifact's 'url' instead)"),
         keep_title_h1: z
           .boolean()
           .optional()
@@ -224,6 +247,7 @@ export function createServer(db: DB): McpServer {
           validateEpub: validate_epub,
           returnContent: return_content,
           keepTitleH1: keep_title_h1,
+          urls: options.renderUrls,
         }),
       ),
   );

@@ -1,6 +1,7 @@
-import { readFileSync } from "node:fs";
+import { createReadStream, readFileSync, realpathSync, statSync } from "node:fs";
 import http from "node:http";
-import { resolve } from "node:path";
+import { isIP } from "node:net";
+import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { JWTVerifyGetKey } from "jose";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -9,8 +10,8 @@ import { FAVICON } from "./favicon.js";
 import { healthStatus } from "./health.js";
 import { adminPage, homePage } from "./home.js";
 import { AccessError, authorizeRequest, requestAccessConfig, type RequestAccessConfig } from "./http-access.js";
-import { VERSION, createServer } from "./mcp.js";
-import { renderDocument } from "./render.js";
+import { VERSION, createServer, renderUrlsFromEnv } from "./mcp.js";
+import { renderBaseDir, renderDocument } from "./render.js";
 import type { TermSyncStatus } from "./terminology.js";
 
 export interface ServeOptions {
@@ -19,6 +20,83 @@ export interface ServeOptions {
   host: string;
   port: number;
   termSync?: () => TermSyncStatus;
+}
+
+const RENDER_TYPES: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".epub": "application/epub+zip",
+  ".html": "text/html; charset=utf-8",
+  ".htm": "text/html; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
+  ".json": "application/json",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ".rtf": "application/rtf",
+  ".tex": "application/x-tex",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+};
+
+/**
+ * The file under the render directory that `/renders/<path>` names, or null. Refuses paths that
+ * escape the directory (including through symlinks), hidden files (render temp files), and directories.
+ */
+export function renderFileFor(pathname: string, renderDir: string = renderBaseDir()): string | null {
+  let rel: string;
+  try {
+    rel = decodeURIComponent(pathname.slice("/renders/".length));
+  } catch {
+    return null;
+  }
+  if (!rel || rel.includes("\0") || rel.split("/").some((part) => part === ".." || part.startsWith("."))) return null;
+  try {
+    const root = realpathSync(renderDir);
+    const file = realpathSync(resolve(root, rel));
+    const inside = relative(root, file);
+    if (!inside || inside.startsWith(`..${sep}`) || inside === ".." || isAbsolute(inside)) return null;
+    return statSync(file).isFile() ? file : null;
+  } catch {
+    return null;
+  }
+}
+
+function serveRender(req: http.IncomingMessage, res: http.ServerResponse, pathname: string) {
+  if (req.method !== "GET" && req.method !== "HEAD") return void res.writeHead(405, { allow: "GET, HEAD" }).end();
+  const file = renderFileFor(pathname);
+  if (!file) return void res.writeHead(404, { "content-type": "text/plain; charset=utf-8" }).end("Not found.");
+  const type = RENDER_TYPES[extname(file).toLowerCase()] ?? "application/octet-stream";
+  const name = file.slice(file.lastIndexOf(sep) + 1).replace(/["\\\r\n]/g, "_");
+  res.writeHead(200, {
+    "content-type": type,
+    "content-length": statSync(file).size,
+    "content-disposition": `${type.startsWith("application/pdf") || type.startsWith("text/") || type.startsWith("image/") ? "inline" : "attachment"}; filename="${name}"`,
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff",
+    // Rendered HTML is author content: give it an opaque origin with no scripts.
+    "content-security-policy": "sandbox",
+  });
+  if (req.method === "HEAD") return void res.end();
+  createReadStream(file).pipe(res);
+}
+
+/**
+ * URL bases from the request itself (authorizeRequest has already validated its Host): a LAN request
+ * names the LAN address; a request through the tunnel names the public one (https), unless the
+ * tunnel rewrote Host to the origin's LAN name.
+ */
+export function requestUrlBases(req: http.IncomingMessage, via: string, port: number): { lan: string; public?: string } {
+  const host = req.headers.host;
+  const lanDefault = `http://iasp-mcp.localdomain:${port}`;
+  if (!host) return { lan: lanDefault };
+  if (via === "lan") return { lan: `http://${host}` };
+  const name = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "").toLowerCase();
+  const lanName = name === "localhost" || name.endsWith(".localdomain") || name.endsWith(".local") || isIP(name) !== 0;
+  return lanName ? { lan: `http://${host}` } : { lan: lanDefault, public: `https://${host}` };
 }
 
 export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
@@ -97,6 +175,11 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
           .end(pdfBytes);
       }
 
+      if (url.pathname.startsWith("/renders/")) {
+        // LAN, or through the tunnel with a verified Access token (authorizeRequest refuses anything else).
+        return serveRender(req, res, url.pathname);
+      }
+
       if (url.pathname !== "/mcp" && !rootMcp) {
         res.writeHead(404).end();
         return;
@@ -112,7 +195,7 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
         return;
       }
 
-      const mcp = createServer(db);
+      const mcp = createServer(db, { renderUrls: renderUrlsFromEnv(process.env, requestUrlBases(req, via, options.port)) });
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       res.on("close", () => {
         void transport.close();
@@ -146,5 +229,5 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
 }
 
 export async function serveStdio(db: DB): Promise<void> {
-  await createServer(db).connect(new StdioServerTransport());
+  await createServer(db, { renderUrls: renderUrlsFromEnv(process.env) }).connect(new StdioServerTransport());
 }

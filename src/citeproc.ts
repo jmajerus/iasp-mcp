@@ -108,7 +108,46 @@ export function findCitations(text: string): CitationSpan[] {
   return spans.sort((a, b) => a.start - b.start);
 }
 
+export interface CitationItem {
+  key: string;
+  /** The suffix after the key (`p. 44` in `[@key, p. 44]`, or the bracket of `@key [p. 44]`). */
+  locator?: string;
+}
+
+/** The cited items of one citation span, with the text after each key as its locator. */
+export function citationItems(span: Pick<CitationSpan, "raw" | "kind">): CitationItem[] {
+  const itemRe = new RegExp(String.raw`^[^@]*?-?@(${KEY_SRC})([\s\S]*)$`, "u");
+  if (span.kind === "narrative") {
+    const m = new RegExp(String.raw`^@(${KEY_SRC})(?:[ \t]?\[([^\[\]]*)\])?`, "u").exec(span.raw);
+    if (!m) return [];
+    const locator = m[2]?.trim();
+    return [{ key: m[1].replace(/^\{|\}$/g, ""), ...(locator ? { locator } : {}) }];
+  }
+  const items: CitationItem[] = [];
+  for (const part of oneLine(span.raw.slice(1, -1)).split(";")) {
+    const m = itemRe.exec(part.trim());
+    if (!m) continue;
+    const locator = m[2].replace(/^\s*,/, "").trim();
+    items.push({ key: m[1].replace(/^\{|\}$/g, ""), ...(locator ? { locator } : {}) });
+  }
+  return items;
+}
+
+/** Every citekey cited in a Markdown text, split by whether it appears in a bracketed citation. */
+export function citedKeys(text: string): { bracketed: Set<string>; narrative: Set<string> } {
+  const bracketed = new Set<string>();
+  const narrative = new Set<string>();
+  for (const span of findCitations(text)) {
+    for (const k of span.keys) (span.kind === "bracketed" ? bracketed : narrative).add(k);
+  }
+  for (const k of bracketed) narrative.delete(k);
+  return { bracketed, narrative };
+}
+
 export interface ResolveCitationsOptions {
+  /** One or more bibliographies (BibTeX, CSL JSON, ...); all are passed to pandoc. */
+  bibliographyPaths?: string[];
+  /** @deprecated use bibliographyPaths */
   bibliographyPath?: string;
   cslPath?: string;
   lang?: string;
@@ -144,7 +183,8 @@ export function resolveCitations(text: string, options: ResolveCitationsOptions)
   if (!spans.length) return { content: text, warnings: [], citations: 0, resolved: 0 };
 
   const bracketed = spans.filter((s) => s.kind === "bracketed");
-  if (!options.bibliographyPath) {
+  const bibliographies = [...(options.bibliographyPaths ?? []), ...(options.bibliographyPath ? [options.bibliographyPath] : [])];
+  if (!bibliographies.length) {
     if (!bracketed.length) return { content: text, warnings: [], citations: 0, resolved: 0 };
     return {
       content: text,
@@ -174,7 +214,7 @@ export function resolveCitations(text: string, options: ResolveCitationsOptions)
     WRITER,
     "--wrap=none",
     "--citeproc",
-    `--bibliography=${options.bibliographyPath}`,
+    ...bibliographies.map((b) => `--bibliography=${b}`),
     ...(options.cslPath ? [`--csl=${options.cslPath}`] : []),
     ...(options.lang ? ["-M", `lang=${options.lang}`] : []),
   ];

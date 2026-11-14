@@ -1,8 +1,11 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openDb } from "../src/db.js";
-import { serveHttp } from "../src/server.js";
+import { renderFileFor, requestUrlBases, serveHttp } from "../src/server.js";
 
 describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
   const db = openDb(":memory:");
@@ -110,6 +113,70 @@ describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
       expect(valJson.valid).toBe(true);
     } finally {
       await client.close();
+    }
+  });
+
+  it("serves renders by URL on the LAN, gives artifacts a url, and refuses escapes and tunnel reads without Access", async () => {
+    const previous = { dir: process.env.IASP_RENDER_DIR, pub: process.env.IASP_PUBLIC_URL };
+    const renderDir = mkdtempSync(join(tmpdir(), "iasp-served-"));
+    process.env.IASP_RENDER_DIR = renderDir;
+    process.env.IASP_PUBLIC_URL = "https://iasp.example.test";
+    const client = new Client({ name: "iasp-test-client", version: "1.0.0" });
+    try {
+      await client.connect(new StreamableHTTPClientTransport(new URL(`${baseUrl}/mcp`)));
+      const res = await client.callTool({
+        name: "render_document",
+        arguments: { markdown: "# Served\n\nHello, renders.\n", formats: ["md"], output_dir: "jobs/one", output_basename: "served doc" },
+      });
+      const out = JSON.parse((res.content as { type: string; text: string }[])[0].text) as {
+        artifacts: { url?: string; public_url?: string; content?: string }[];
+      };
+      const artifact = out.artifacts[0];
+      expect(artifact.content).toBeUndefined();
+      expect(artifact.url).toBe(`${baseUrl}/renders/jobs/one/served%20doc.md`);
+      expect(artifact.public_url).toBe("https://iasp.example.test/renders/jobs/one/served%20doc.md");
+
+      const got = await fetch(artifact.url!);
+      expect(got.status).toBe(200);
+      expect(got.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+      expect(got.headers.get("content-security-policy")).toBe("sandbox");
+      expect(await got.text()).toContain("Hello, renders.");
+
+      writeFileSync(join(renderDir, "page.pdf"), "%PDF-1.4");
+      expect((await fetch(`${baseUrl}/renders/page.pdf`)).headers.get("content-type")).toBe("application/pdf");
+
+      // Escapes, hidden temp files, directories, and symlinks out of the directory are refused.
+      const outside = mkdtempSync(join(tmpdir(), "iasp-outside-"));
+      writeFileSync(join(outside, "secret.txt"), "secret");
+      symlinkSync(join(outside, "secret.txt"), join(renderDir, "link.txt"));
+      writeFileSync(join(renderDir, ".tmp-x.md"), "temp");
+      mkdirSync(join(renderDir, "dir"), { recursive: true });
+      for (const path of ["/renders/%2e%2e/etc/passwd", "/renders/..%2f..%2fetc%2fpasswd", "/renders/link.txt", "/renders/.tmp-x.md", "/renders/dir", "/renders/missing.md"]) {
+        expect((await fetch(`${baseUrl}${path}`)).status, path).toBe(404);
+      }
+      expect(renderFileFor("/renders/../../etc/passwd", renderDir)).toBeNull();
+      expect(renderFileFor("/renders/page.pdf", renderDir)).toBe(join(renderDir, "page.pdf"));
+      rmSync(outside, { recursive: true, force: true });
+
+      // An MCP request through the tunnel names the public host; one whose Host was rewritten to the origin stays LAN.
+      const asReq = (host: string) => ({ headers: { host } }) as unknown as import("node:http").IncomingMessage;
+      expect(requestUrlBases(asReq("iasp.example.org"), "access", 8000)).toEqual({
+        lan: "http://iasp-mcp.localdomain:8000",
+        public: "https://iasp.example.org",
+      });
+      expect(requestUrlBases(asReq("iasp-mcp.localdomain:8000"), "access", 8000)).toEqual({ lan: "http://iasp-mcp.localdomain:8000" });
+      expect(requestUrlBases(asReq("192.168.1.20:8000"), "lan", 8000)).toEqual({ lan: "http://192.168.1.20:8000" });
+
+      // Through the tunnel a render needs a verified Access token.
+      const proxied = await fetch(`${baseUrl}/renders/page.pdf`, { headers: { "cf-ray": "r", "cf-connecting-ip": "203.0.113.5" } });
+      expect(proxied.status).toBe(401);
+    } finally {
+      await client.close();
+      if (previous.dir === undefined) delete process.env.IASP_RENDER_DIR;
+      else process.env.IASP_RENDER_DIR = previous.dir;
+      if (previous.pub === undefined) delete process.env.IASP_PUBLIC_URL;
+      else process.env.IASP_PUBLIC_URL = previous.pub;
+      rmSync(renderDir, { recursive: true, force: true });
     }
   });
 });

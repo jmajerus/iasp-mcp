@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { SCHEMA_VERSION, openDb } from "./db.js";
-import { validateMarkdown } from "./markdown.js";
+import { validateMarkdownWithQuotes } from "./quote-check.js";
 import { composeIntent, iaspStatus } from "./queries.js";
 import { type RenderFormat, RENDER_FORMATS, renderDocument } from "./render.js";
 import { serveHttp, serveStdio } from "./server.js";
@@ -90,10 +90,10 @@ async function renderCommand() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-function validateCommand() {
+async function validateCommand() {
   const target = argv.find((a) => !a.startsWith("-")) ?? "demo/essay-on-attentive-reading.md";
   const db = openDb();
-  const result = validateMarkdown(db, { path: target });
+  const result = await validateMarkdownWithQuotes(db, { path: target });
   console.log(JSON.stringify(result, null, 2));
   if (!result.valid) process.exitCode = 1;
 }
