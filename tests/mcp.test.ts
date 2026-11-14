@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openDb } from "../src/db.js";
-import { renderFileFor, serveHttp } from "../src/server.js";
+import { renderFileFor, requestUrlBases, serveHttp } from "../src/server.js";
 
 describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
   const db = openDb(":memory:");
@@ -157,6 +157,15 @@ describe("iasp-mcp Streamable HTTP MCP server and LAN pages", () => {
       expect(renderFileFor("/renders/../../etc/passwd", renderDir)).toBeNull();
       expect(renderFileFor("/renders/page.pdf", renderDir)).toBe(join(renderDir, "page.pdf"));
       rmSync(outside, { recursive: true, force: true });
+
+      // An MCP request through the tunnel names the public host; one whose Host was rewritten to the origin stays LAN.
+      const asReq = (host: string) => ({ headers: { host } }) as unknown as import("node:http").IncomingMessage;
+      expect(requestUrlBases(asReq("iasp.example.org"), "access", 8000)).toEqual({
+        lan: "http://iasp-mcp.localdomain:8000",
+        public: "https://iasp.example.org",
+      });
+      expect(requestUrlBases(asReq("iasp-mcp.localdomain:8000"), "access", 8000)).toEqual({ lan: "http://iasp-mcp.localdomain:8000" });
+      expect(requestUrlBases(asReq("192.168.1.20:8000"), "lan", 8000)).toEqual({ lan: "http://192.168.1.20:8000" });
 
       // Through the tunnel a render needs a verified Access token.
       const proxied = await fetch(`${baseUrl}/renders/page.pdf`, { headers: { "cf-ray": "r", "cf-connecting-ip": "203.0.113.5" } });

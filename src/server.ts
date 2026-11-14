@@ -1,5 +1,6 @@
 import { createReadStream, readFileSync, realpathSync, statSync } from "node:fs";
 import http from "node:http";
+import { isIP } from "node:net";
 import { extname, isAbsolute, relative, resolve, sep } from "node:path";
 import type { JWTVerifyGetKey } from "jose";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -81,6 +82,21 @@ function serveRender(req: http.IncomingMessage, res: http.ServerResponse, pathna
   });
   if (req.method === "HEAD") return void res.end();
   createReadStream(file).pipe(res);
+}
+
+/**
+ * URL bases from the request itself (authorizeRequest has already validated its Host): a LAN request
+ * names the LAN address; a request through the tunnel names the public one (https), unless the
+ * tunnel rewrote Host to the origin's LAN name.
+ */
+export function requestUrlBases(req: http.IncomingMessage, via: string, port: number): { lan: string; public?: string } {
+  const host = req.headers.host;
+  const lanDefault = `http://iasp-mcp.localdomain:${port}`;
+  if (!host) return { lan: lanDefault };
+  if (via === "lan") return { lan: `http://${host}` };
+  const name = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "").toLowerCase();
+  const lanName = name === "localhost" || name.endsWith(".localdomain") || name.endsWith(".local") || isIP(name) !== 0;
+  return lanName ? { lan: `http://${host}` } : { lan: lanDefault, public: `https://${host}` };
 }
 
 export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
@@ -179,8 +195,7 @@ export function serveHttp(db: DB, options: ServeOptions): Promise<http.Server> {
         return;
       }
 
-      const lanFallback = via === "lan" && req.headers.host ? `http://${req.headers.host}` : `http://iasp-mcp.localdomain:${options.port}`;
-      const mcp = createServer(db, { renderUrls: renderUrlsFromEnv(process.env, lanFallback) });
+      const mcp = createServer(db, { renderUrls: renderUrlsFromEnv(process.env, requestUrlBases(req, via, options.port)) });
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       res.on("close", () => {
         void transport.close();

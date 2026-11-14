@@ -68,13 +68,16 @@ const FENCE_LINE_RE = /^\s*:{3,}/;
 const FOOTNOTE_DEF_RE = /^\[\^([^\]\s]+)\]:\s?(.*)$/;
 const FOOTNOTE_REF_RE = /\[\^([^\]\s]+)\]/g;
 
-/** Quoted words only: no citations, footnote references, or line wrapping. */
+/**
+ * Quoted words only: no citations (bracketed `[@key, p. 3]` or narrative `@key` / `@key [p. 3]`),
+ * footnote references, or line wrapping. Emails and URLs are not citations and are kept. Applied to
+ * the draft and the saved text alike, so an `@` the source itself contains cancels out.
+ */
 export function quoteWords(text: string): string {
-  return text
-    .replace(/\[\^[^\]]+\]/g, "")
-    .replace(/\[[^\[\]]*@[^\[\]]*\]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  let out = text.replace(/\[\^[^\]]+\]/g, "").replace(/\[[^\[\]]*@[^\[\]]*\]/g, "");
+  const narrative = findCitations(out).filter((s) => s.kind === "narrative");
+  for (const s of narrative.reverse()) out = out.slice(0, s.start) + out.slice(s.end);
+  return out.replace(/\s+/g, " ").trim();
 }
 
 /**

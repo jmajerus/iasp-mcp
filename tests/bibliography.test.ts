@@ -32,10 +32,11 @@ function stubServer(requests: string[]) {
         unfiled: [
           ...(keys.includes("nye2011future") ? [{ citekey: "nye2011future", work: "calibre:u1", book_id: "main:42", calibre_uuid: "u1" }] : []),
           ...(keys.includes("doe2020uuid") ? [{ citekey: "doe2020uuid", work: "calibre:u2", book_id: null, calibre_uuid: "u2" }] : []),
+          ...(keys.includes("empty2012item") ? [{ citekey: "empty2012item", work: "calibre:u4", book_id: "main:44", calibre_uuid: "u4" }] : []),
           ...(keys.includes("twin2010copy") ? [{ citekey: "twin2010copy", work: "calibre:u3", book_id: "main:43", calibre_uuid: "u3" }] : []),
         ],
         ambiguous: keys.includes("smith2001twice") ? [{ citekey: "smith2001twice", candidates: ["zotero:users/1/A", "zotero:users/1/B"] }] : [],
-        missing: keys.filter((k) => !["roberts1993victory", "nye2011future", "doe2020uuid", "smith2001twice", "twin2010copy"].includes(k)),
+        missing: keys.filter((k) => !["roberts1993victory", "nye2011future", "doe2020uuid", "smith2001twice", "twin2010copy", "empty2012item"].includes(k)),
       });
     }
     if (url.pathname === "/api/csl") {
@@ -44,7 +45,8 @@ function stubServer(requests: string[]) {
         return send(200, { warnings: ["proposed citekey"], item: { id: "calibre:u1", type: "book", title: "The Future of Power", author: [{ family: "Nye", given: "Joseph" }], issued: { "date-parts": [[2011]] } } });
       }
       if (book === "u2") return send(200, { item: { id: "doe2020uuid", type: "book", title: "By Uuid", author: [{ family: "Doe", given: "Jane" }] } });
-      if (book === "main:43") return send(409, { error: "ambiguous", books: [1, 2] });
+      if (book === "main:43") return send(409, { error: "ambiguous", books: [1, 2], warnings: ["two editions share this key"] });
+      if (book === "main:44") return send(200, { item: null, warnings: ["no metadata yet"] });
       return send(404, { error: "no-book" });
     }
     send(404, {});
@@ -67,7 +69,7 @@ describe("server-built bibliography", () => {
 
   it("fetches only keys the author lacks and reports each key's source", async () => {
     requests.length = 0;
-    const cited = ["foucault1977discipline", "roberts1993victory", "nye2011future", "doe2020uuid", "smith2001twice", "ghost2000none", "twin2010copy", "handle"];
+    const cited = ["foucault1977discipline", "roberts1993victory", "nye2011future", "doe2020uuid", "smith2001twice", "ghost2000none", "twin2010copy", "empty2012item", "handle"];
     const { items, report } = await fetchBibliography(cited, {
       authorKeys: ["foucault1977discipline", "uncited2000"],
       required: new Set(cited.filter((k) => k !== "handle")),
@@ -82,15 +84,18 @@ describe("server-built bibliography", () => {
     });
     expect(items.map((i) => i.id).sort()).toEqual(["doe2020uuid", "nye2011future", "roberts1993victory"]);
     expect(requests).toContain("/api/csl?book=u2");
-    expect(report.missing).toEqual(["ghost2000none", "smith2001twice", "twin2010copy"]); // a bare @handle is not required
+    expect(report.missing).toEqual(["empty2012item", "ghost2000none", "smith2001twice", "twin2010copy"]); // a bare @handle is not required
     expect(report.ambiguous).toEqual([{ citekey: "smith2001twice", candidates: ["zotero:users/1/A", "zotero:users/1/B"] }]);
     expect(report.unfiled.map((u) => u.citekey).sort()).toEqual(["doe2020uuid", "nye2011future"]);
     const w = report.warnings.join("\n");
     expect(w).toContain("@nye2011future: not filed in Zotero yet");
     expect(w).toContain("@smith2001twice matches more than one work");
-    expect(w).toContain("No bibliography entry for @ghost2000none");
+    expect(w).toMatch(/No bibliography entry for [^\n]*@ghost2000none/);
     expect(w).toContain("@nye2011future (corpus-mcp): proposed citekey");
     expect(w).toContain("HTTP 409: ambiguous (2 books)");
+    // corpus-mcp's warnings are kept even when it gives no item
+    expect(w).toContain("@twin2010copy (corpus-mcp): two editions share this key");
+    expect(w).toContain("@empty2012item (corpus-mcp): no metadata yet");
   });
 
   it("warns, rather than failing, when holdings-mcp is off or unreachable", async () => {

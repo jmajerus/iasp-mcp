@@ -87,13 +87,15 @@ async function getJson<T>(url: string, timeoutMs: number): Promise<T> {
   const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), headers: { accept: "application/json" } });
   if (!res.ok) {
     let detail = "";
+    let warnings: string[] = [];
     try {
-      const body = (await res.json()) as { error?: string; books?: unknown[] };
+      const body = (await res.json()) as { error?: string; books?: unknown[]; warnings?: string[] };
+      if (Array.isArray(body.warnings)) warnings = body.warnings.map(String);
       if (body.error) detail = `: ${body.error}${Array.isArray(body.books) ? ` (${body.books.length} books)` : ""}`;
     } catch {
       // no JSON body
     }
-    throw new Error(`HTTP ${res.status}${detail}`);
+    throw Object.assign(new Error(`HTTP ${res.status}${detail}`), { warnings });
   }
   return (await res.json()) as T;
 }
@@ -174,18 +176,19 @@ export async function fetchBibliography(
             const r = await getJson<{ item?: CslItem; warnings?: string[] }>(`${corpus}/api/csl?book=${encodeURIComponent(book)}`, timeoutMs);
             return { u, item: r.item, warnings: r.warnings ?? [] };
           } catch (error) {
-            return { u, error: reason(error) };
+            const warnings = (error as { warnings?: string[] }).warnings ?? [];
+            return { u, error: reason(error), warnings };
           }
         }),
       );
       for (const f of fetched) {
+        for (const w of f.warnings ?? []) report.warnings.push(`@${f.u.citekey} (corpus-mcp): ${w}`);
         if (!f.item) {
           report.warnings.push(`@${f.u.citekey} is Calibre book ${f.u.book_id ?? f.u.calibre_uuid}, but corpus-mcp gave no CSL entry for it (${f.error ?? "empty reply"}).`);
           continue;
         }
         // corpus-mcp's item.id may be another key (Calibre's, or calibre:<uuid>): cite it by the key the document uses.
         items.push({ ...f.item, id: f.u.citekey });
-        for (const w of f.warnings ?? []) report.warnings.push(`@${f.u.citekey} (corpus-mcp): ${w}`);
         sources[f.u.citekey] = "corpus";
         report.unfiled.push({ citekey: f.u.citekey, book_id: f.u.book_id ?? null, ...(f.u.calibre_uuid ? { calibre_uuid: f.u.calibre_uuid } : {}) });
         report.warnings.push(`@${f.u.citekey}: not filed in Zotero yet; cited from Calibre book ${f.u.book_id ?? f.u.calibre_uuid}.`);

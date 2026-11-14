@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { openDb } from "../src/db.js";
 import { type FetchedQuote, type QuoteLookup, fetchQuotes } from "../src/provenance.js";
-import { canonicalWords, checkQuotes, locatorsAgree, scanQuotePassages, validateMarkdownWithQuotes } from "../src/quote-check.js";
+import { canonicalWords, checkQuotes, locatorsAgree, quoteWords, scanQuotePassages, validateMarkdownWithQuotes } from "../src/quote-check.js";
 
 const HANH =
   "EACH OF US HAS A DEEP DESIRE TO know and understand the world and to be known and understood in return. That is a deep natural thirst.";
@@ -38,6 +38,13 @@ describe("quote text checks", () => {
     expect(r.checks[0]).toMatchObject({ id: 829, line: 5, kind: "block", text: "matches", citekey: "matches", locator: "matches" });
     expect(r.issues).toEqual([]);
     expect(canonicalWords("It's \"so\" -- *very* ...")).toBe(canonicalWords("It’s “so” – very …"));
+  });
+
+  it("removes narrative citations but keeps emails before comparing", async () => {
+    const md = ["<!-- quote 829 -->", `> ${HANH} @hanh2007fidelity [chap. 4]`].join("\n");
+    const r = await checkQuotes(md, { lookup: lookupOf(hanh) });
+    expect(r.checks[0]).toMatchObject({ text: "matches", citekey: "matches", locator: "matches" });
+    expect(quoteWords("Write to me@example.org as @smith2001x said.")).toBe("Write to me@example.org as said.");
   });
 
   it("reports the first difference of a block quote with ~30 characters either side", async () => {
@@ -113,6 +120,9 @@ describe("quote text checks", () => {
     const down = await checkQuotes(md, { env: { QUOTE_BASE: "http://127.0.0.1:9" } });
     expect(down.checks[0].text).toBe("unchecked");
     expect(down.unavailable).toMatch(/unreachable/);
+
+    const malformed = await checkQuotes(md, { env: { QUOTE_BASE: "not a url" } });
+    expect(malformed.checks[0]).toMatchObject({ text: "unchecked", reason: expect.stringContaining("not a valid URL") });
 
     const legacy = await checkQuotes(`<!-- corpus:quote 12 -->\n> ${HANH}`, { lookup: lookupOf() });
     expect(legacy.checks[0].reason).toMatch(/corpus-mcp id/);

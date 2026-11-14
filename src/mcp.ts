@@ -65,11 +65,14 @@ export interface CreateServerOptions {
   renderUrls?: RenderUrlBases;
 }
 
-/** Render URL bases from settings: IASP_URL (LAN; `off` disables) and IASP_PUBLIC_URL (tunnel). */
-export function renderUrlsFromEnv(env: NodeJS.ProcessEnv, fallbackLan?: string): RenderUrlBases {
+/**
+ * Render URL bases from settings: IASP_URL (LAN; `off` disables) and IASP_PUBLIC_URL (tunnel; `off`
+ * disables). Unset, they fall back to `fallback` (the host the request came to).
+ */
+export function renderUrlsFromEnv(env: NodeJS.ProcessEnv, fallback: RenderUrlBases = {}): RenderUrlBases {
   const lanRaw = env.IASP_URL?.trim();
-  const lan = lanRaw?.toLowerCase() === "off" ? undefined : lanRaw || fallbackLan;
-  const pub = env.IASP_PUBLIC_URL?.trim();
+  const lan = lanRaw?.toLowerCase() === "off" ? undefined : lanRaw || fallback.lan;
+  const pub = env.IASP_PUBLIC_URL?.trim() || fallback.public;
   return {
     ...(lan ? { lan: lan.replace(/\/+$/, "") } : {}),
     ...(pub && pub.toLowerCase() !== "off" ? { public: pub.replace(/\/+$/, "") } : {}),

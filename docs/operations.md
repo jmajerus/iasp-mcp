@@ -33,7 +33,7 @@ Settings come from `.env` in your local checkout (see [.env.example](../.env.exa
 | `HOLDINGS_BASE` | `http://holdings-mcp.localdomain:8000` | `holdings-mcp` endpoint (`/api/bibliography`) asked for bibliography entries of cited keys the author did not supply; `off` disables. |
 | `CORPUS_BASE` | `http://corpus-mcp.localdomain:8000` | `corpus-mcp` endpoint (`/api/csl`) asked for CSL entries of Calibre books not filed in Zotero yet; `off` disables. |
 | `IASP_URL` | the request's host (HTTP); none (stdio) | LAN base URL for render artifact `url`s (`<base>/renders/<path>`); `off` disables. |
-| `IASP_PUBLIC_URL` | none | Public (tunnel) base URL for render artifact `public_url`s; readers need a Cloudflare Access login. |
+| `IASP_PUBLIC_URL` | the request's host, for requests through the tunnel | Public (tunnel) base URL for render artifact `public_url`s; readers need a Cloudflare Access login. `off` disables. |
 | `IASP_TERMS_SYNC` | `on` | When `on`, `serve` polls `terminology-mcp` every 60 seconds and reports subscriber progress as `iasp-mcp`. |
 | `ACCESS_TEAM_DOMAIN` | none | Cloudflare Access team URL (e.g. `https://linkbud.cloudflareaccess.com`) used to verify `Cf-Access-Jwt-Assertion` headers on non-LAN requests. |
 | `AUTHORING_DEPLOY_PASSWORD` | none | SSH / sudo password for the `authoring` deploy user on `iasp-mcp.localdomain`. |

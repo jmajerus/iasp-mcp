@@ -130,7 +130,7 @@ Paths that climb out of the directory, follow a symlink out of it, or name a hid
 
 Each artifact written inside the render directory gets:
 
-- `url`: the LAN address. The base is `IASP_URL`, else the host the MCP request came to. Over stdio there is no `url` unless `IASP_URL` is set, since a local checkout renders into its own `build/renders`.
-- `public_url`: the tunnel address, when `IASP_PUBLIC_URL` is set.
+- `url`: the LAN address. The base is `IASP_URL`, else the host a LAN MCP request came to, else `http://iasp-mcp.localdomain:<port>`. Over stdio there is no `url` unless `IASP_URL` is set, since a local checkout renders into its own `build/renders`.
+- `public_url`: the tunnel address. The base is `IASP_PUBLIC_URL`, else `https://<host>` when the MCP request itself came through the tunnel (and its Host is the public name, not a rewritten `.localdomain` one).
 
 An absolute `output_dir` outside the render directory gets no URL.

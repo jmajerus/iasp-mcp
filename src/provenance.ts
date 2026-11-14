@@ -206,11 +206,17 @@ export async function fetchQuotes(
   if (!quoteBase) return { quotes, errors, unavailable: "quote lookup is disabled (QUOTE_BASE=off)" };
 
   const client = new Client({ name: "iasp-mcp-provenance", version: "0.1.0" });
-  const transport = new StreamableHTTPClientTransport(new URL(`${quoteBase.replace(/\/+$/, "")}/mcp`), {
-    requestInit: { signal: AbortSignal.timeout(timeoutMs) },
-  });
+  let endpoint: URL;
+  try {
+    endpoint = new URL(`${quoteBase.replace(/\/+$/, "")}/mcp`);
+  } catch {
+    return { quotes, errors, unavailable: `QUOTE_BASE '${quoteBase}' is not a valid URL` };
+  }
 
   try {
+    const transport = new StreamableHTTPClientTransport(endpoint, {
+      requestInit: { signal: AbortSignal.timeout(timeoutMs) },
+    });
     await client.connect(transport);
   } catch (error) {
     await client.close().catch(() => {});
