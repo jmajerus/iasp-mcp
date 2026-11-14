@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { openDb } from "../src/db.js";
 import { type FetchedQuote, type QuoteLookup, fetchQuotes } from "../src/provenance.js";
-import { canonicalWords, checkQuotes, locatorsAgree, quoteWords, scanQuotePassages, validateMarkdownWithQuotes } from "../src/quote-check.js";
+import { canonicalWords, checkQuotes, excerptOf, locatorsAgree, quoteWords, scanQuotePassages, validateMarkdownWithQuotes } from "../src/quote-check.js";
 
 const HANH =
   "EACH OF US HAS A DEEP DESIRE TO know and understand the world and to be known and understood in return. That is a deep natural thirst.";
@@ -58,6 +58,28 @@ describe("quote text checks", () => {
     expect(r.issues.find((i) => i.code === "quote-text-differs")?.severity).toBe("error");
   });
 
+  it("reports an unchanged part of the saved quote as an excerpt warning, contiguous or elided", async () => {
+    const tail = `<!-- quote 829 -->\n> That is a deep natural thirst. [@hanh2007fidelity, chap. 4]`;
+    const r1 = await checkQuotes(tail, { lookup: lookupOf(hanh) });
+    expect(r1.checks[0]).toMatchObject({ text: "excerpt", excerpt: "contiguous" });
+    expect(r1.checks[0].pieces).toBeUndefined();
+    expect(r1.issues.map((i) => [i.severity, i.code])).toEqual([["warning", "quote-text-excerpt"]]);
+
+    const elided = `<!-- quote 829 -->\n> EACH OF US HAS A DEEP DESIRE TO know and understand the world … That is a deep natural [...] thirst. [@hanh2007fidelity, chap. 4]`;
+    const r2 = await checkQuotes(elided, { lookup: lookupOf(hanh) });
+    expect(r2.checks[0]).toMatchObject({ text: "excerpt", excerpt: "elided", pieces: 3 });
+
+    // Out of order, or a changed word inside a piece, is still an error.
+    expect(excerptOf("natural thirst … EACH OF US", canonicalWords(HANH))).toBeNull();
+    const changed = `<!-- quote 829 -->\n> That is a deep natural hunger. [@hanh2007fidelity, chap. 4]`;
+    expect((await checkQuotes(changed, { lookup: lookupOf(hanh) })).checks[0].text).toBe("differs");
+
+    // An ellipsis the saved text itself contains matches literally first.
+    const savedEllipsis: FetchedQuote = { ...hanh, text: "Disciplinary power...is exercised through its invisibility." };
+    const lit = `<!-- quote 829 -->\n> Disciplinary power…is exercised through its invisibility. [@hanh2007fidelity, chap. 4]`;
+    expect((await checkQuotes(lit, { lookup: lookupOf(savedEllipsis) })).checks[0].text).toBe("matches");
+  });
+
   it("finds a run-in quote's saved words (minus closing punctuation) inside its paragraph", async () => {
     const ok = `<!-- quote 900 -->\nRussell warns that "${RUSSELL.slice(0, -1)}," and the rest follows [@russell2019human, chap. Lettuce].`;
     const r1 = await checkQuotes(ok, { lookup: lookupOf(russell) });
@@ -82,7 +104,7 @@ describe("quote text checks", () => {
     expect(r1.checks[0].citekey).toBe("differs");
     expect(r1.issues.find((i) => i.code === "quote-citekey-differs")?.severity).toBe("error");
 
-    const loc = `<!-- quote 900 -->\nHe wrote "${RUSSELL}" [@russell2019human, "Lettuce"].`;
+    const loc = `<!-- quote 900 -->\nHe wrote "${RUSSELL}" [@russell2019human, chap. Kale].`;
     const r2 = await checkQuotes(loc, { lookup: lookupOf(russell) });
     expect(r2.checks[0]).toMatchObject({ citekey: "matches", locator: "differs" });
     expect(r2.issues.find((i) => i.code === "quote-locator-differs")?.severity).toBe("warning");
@@ -92,6 +114,13 @@ describe("quote text checks", () => {
     expect(locatorsAgree("chapter 4", "chap. 4")).toBe(true);
     expect(locatorsAgree("p. 44, emphasis added", "p. 44")).toBe(true);
     expect(locatorsAgree("p. 45", "p. 44")).toBe(false);
+    // A quoted title is that chapter; bk. / book N is chap. BOOK N; a leading italic work title is ignored.
+    expect(locatorsAgree('"A Spark Neglected Burns the House"', "chap. A Spark Neglected Burns the House")).toBe(true);
+    expect(locatorsAgree("“Lettuce”", "chap. Lettuce")).toBe(true);
+    expect(locatorsAgree("*Iliad* bk. XXIV", "chap. BOOK XXIV")).toBe(true);
+    expect(locatorsAgree("book XXIV", "chap. BOOK XXIV")).toBe(true);
+    expect(locatorsAgree('"On Violence," pt. III', "chap. III")).toBe(false);
+    expect(locatorsAgree("chap. 7", "chap. What Prevents Us from Being Happy?")).toBe(false);
   });
 
   it("warns on block quotes without a marker and on citation-less or orphan markers", async () => {

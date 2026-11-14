@@ -53,6 +53,7 @@ export interface ValidationIssue {
     | "unstyled-note-modifier"
     | "epigraph-blockquote"
     | "quote-text-differs"
+    | "quote-text-excerpt"
     | "quote-text-unchecked"
     | "quote-citekey-differs"
     | "quote-citation-missing"

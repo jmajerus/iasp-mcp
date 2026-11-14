@@ -34,8 +34,11 @@ export interface UnmarkedBlockQuote {
   text: string;
 }
 
-/** `note`: the id is a note in quote-mcp (the author's own words), so there are no quoted words to compare. */
-export type TextStatus = "matches" | "differs" | "unchecked" | "note";
+/**
+ * `excerpt`: a block quote that quotes part of the saved text, unchanged (a warning).
+ * `note`: the id is a note in quote-mcp (the author's own words), so there are no quoted words to compare.
+ */
+export type TextStatus = "matches" | "excerpt" | "differs" | "unchecked" | "note";
 
 export interface QuoteCheck {
   id: number;
@@ -45,6 +48,10 @@ export interface QuoteCheck {
   /** Why the text was not checked, or how it differs. */
   reason?: string;
   /** About 30 characters either side of the first difference. */
+  /** For `excerpt`: one contiguous run of the saved text, or runs joined by … / […] in the saved order. */
+  excerpt?: "contiguous" | "elided";
+  /** For an `elided` excerpt: how many runs. */
+  pieces?: number;
   saved_at_difference?: string;
   draft_at_difference?: string;
   citekey: "matches" | "differs" | "missing" | "unchecked";
@@ -241,7 +248,16 @@ export function scanQuotePassages(markdown: string): { passages: QuotePassage[];
 }
 
 function normLocator(loc: string): string {
-  return loc
+  let l = loc
+    .trim()
+    // A leading italic work title names the work, not the place: `*Iliad* bk. XXIV`.
+    .replace(/^(\*{1,2}|_{1,2})(?=\S)[^*_]*?\S\1\s*,?\s+(?=\S)/, "");
+  // A quoted section title is that chapter: `"Lettuce"` = `chap. Lettuce`.
+  const quoted = /^["“”'‘’]([^"“”]+?)[,.]?["“”'‘’]$/.exec(l);
+  if (quoted) l = `chap. ${quoted[1]}`;
+  // A book of a work is how EPUB chapters name it: `bk. XXIV` = `book XXIV` = `chap. BOOK XXIV`.
+  l = l.replace(/^(?:bk\.?|books?)\s+(\S+)/i, "chap. book $1");
+  return l
     .toLowerCase()
     .replace(/\bpages?\b\.?/g, (w) => (w.startsWith("pages") ? "pp." : "p."))
     .replace(/\bchapters?\b\.?|\bchap\b\.?|\bch\b\.?/g, "chap.")
@@ -258,11 +274,47 @@ export function locatorsAgree(cited: string, saved: string): boolean {
   return a === b || a.startsWith(`${b},`) || a.startsWith(`${b} `);
 }
 
-function compareText(passage: QuotePassage, saved: string): Pick<QuoteCheck, "text" | "reason" | "saved_at_difference" | "draft_at_difference"> {
+type TextResult = Pick<QuoteCheck, "text" | "reason" | "excerpt" | "pieces" | "saved_at_difference" | "draft_at_difference">;
+
+/**
+ * Whether a block quote's words are an excerpt of the saved words: one contiguous run, or runs
+ * separated by … / […] that appear in the saved text in that order. A literal match (including any
+ * ellipsis the saved text itself contains) is tried first.
+ */
+export function excerptOf(draft: string, want: string): { excerpt: "contiguous" | "elided"; pieces: number } | null {
+  if (!draft) return null;
+  if (want.includes(draft)) return { excerpt: "contiguous", pieces: 1 };
+  const pieces = draft
+    .split(/\s*\[\s*…\s*\]\s*|\s*…\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (!pieces.length) return null;
+  let from = 0;
+  for (const piece of pieces) {
+    const at = want.indexOf(piece, from);
+    if (at < 0) return null;
+    from = at + piece.length;
+  }
+  return pieces.length === 1 ? { excerpt: "contiguous", pieces: 1 } : { excerpt: "elided", pieces: pieces.length };
+}
+
+function compareText(passage: QuotePassage, saved: string): TextResult {
   const draft = canonicalWords(passage.words);
   let want = canonicalWords(quoteWords(saved));
   if (passage.kind === "block") {
     if (draft === want) return { text: "matches" };
+    const ex = excerptOf(draft, want);
+    if (ex) {
+      return {
+        text: "excerpt",
+        reason:
+          ex.excerpt === "contiguous"
+            ? "the block quote is a contiguous part of the saved quote"
+            : `the block quote is ${ex.pieces} parts of the saved quote joined by ellipses`,
+        excerpt: ex.excerpt,
+        ...(ex.excerpt === "elided" ? { pieces: ex.pieces } : {}),
+      };
+    }
     let at = 0;
     while (at < want.length && want[at] === draft[at]) at++;
     return {
@@ -313,7 +365,7 @@ function checkPassage(passage: QuotePassage, lookup: QuoteLookup): QuoteCheck {
   if (lookup.unavailable) return unchecked(lookup.unavailable);
   if (!remote) return unchecked(`quote-mcp has no quote ${passage.id}${lookup.errors.has(passage.id) ? `: ${lookup.errors.get(passage.id)}` : ""}`);
 
-  const text: Pick<QuoteCheck, "text" | "reason" | "saved_at_difference" | "draft_at_difference"> =
+  const text: TextResult =
     remote.kind === "note"
       ? { text: "note", reason: `quote ${passage.id} is a note in quote-mcp, not a quote, so it has no quoted words to compare` }
       : remote.text
@@ -367,7 +419,15 @@ function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavail
       });
       continue;
     }
-    if (c.text === "differs") {
+    if (c.text === "excerpt") {
+      issues.push({
+        severity: "warning",
+        code: "quote-text-excerpt",
+        line: c.line,
+        message: `Quote ${c.id} (line ${c.line}) quotes ${c.excerpt === "elided" ? `${c.pieces} parts` : "part"} of the saved quote unchanged${c.excerpt === "elided" ? ", joined by ellipses" : ""}.`,
+        suggestion: "Fine for an editorial excerpt; save the excerpt as its own quote if it should match exactly.",
+      });
+    } else if (c.text === "differs") {
       issues.push({
         severity: "error",
         code: "quote-text-differs",
