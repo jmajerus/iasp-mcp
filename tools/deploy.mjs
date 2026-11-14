@@ -13,7 +13,17 @@ const defaultUser = process.env.IASP_AUTHORING_USER ?? "authoring";
 const defaultHost = process.env.IASP_HOST && process.env.IASP_HOST !== "0.0.0.0" ? process.env.IASP_HOST : "iasp-mcp.localdomain";
 const HOST = process.env.IASP_DEPLOY_HOST ?? `${defaultUser}@${defaultHost}`;
 const ASKPASS = path.join(root, "tools", "askpass.mjs");
-const ENV_NAMES = ["TERMINOLOGY_BASE", "IASP_TERMS_SYNC", "ACCESS_TEAM_DOMAIN", "IASP_PORT"];
+const ENV_NAMES = [
+  "TERMINOLOGY_BASE",
+  "QUOTE_BASE",
+  "HOLDINGS_BASE",
+  "CORPUS_BASE",
+  "IASP_URL",
+  "IASP_PUBLIC_URL",
+  "IASP_TERMS_SYNC",
+  "ACCESS_TEAM_DOMAIN",
+  "IASP_PORT",
+];
 
 const USAGE = `Usage: npm run deploy -- [--provision | --env] [--skip-tests]
 

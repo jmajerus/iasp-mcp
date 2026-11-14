@@ -2,9 +2,11 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, isAbsolute, relative, resolve, sep } from "node:path";
 import { PROJECT_ROOT } from "./db.js";
-import { resolveCitations } from "./citeproc.js";
+import { type BibliographyReport, bibliographyFileKeys, bibtexKeys, fetchBibliography } from "./bibliography.js";
+import { citedKeys, resolveCitations } from "./citeproc.js";
 import { type AiDisclosureMetadata, extractFrontmatter, renderCleanMarkdown, renderGhostMarkdown } from "./ghost.js";
-import { buildProvenanceManifest, type ProvenanceManifest } from "./provenance.js";
+import { buildProvenanceManifest, fetchQuotes, type ProvenanceManifest, scanMarkdownProvenanceSeeds } from "./provenance.js";
+import { checkQuotes } from "./quote-check.js";
 import { ToolError } from "./queries.js";
 
 export const DEMO_ARTICLE_PATH = resolve(PROJECT_ROOT, "demo/essay-on-attentive-reading.md");
@@ -83,6 +85,17 @@ export interface RenderDocumentOptions {
   rootDir?: string;
   /** Ghost only: keep the body's leading `# Title` H1 (stripped by default because Ghost has its own title field). */
   keepTitleH1?: boolean;
+  /** Base URLs under which the render directory is served at `/renders/` (see server.ts). */
+  urls?: RenderUrlBases;
+  /** Settings for the quote-mcp, holdings-mcp, and corpus-mcp lookups (default: process.env). */
+  env?: NodeJS.ProcessEnv;
+}
+
+export interface RenderUrlBases {
+  /** LAN base, e.g. http://iasp-mcp.localdomain:8000 */
+  lan?: string;
+  /** Public base through the tunnel (Cloudflare Access required), e.g. https://iasp.example.org */
+  public?: string;
 }
 
 export interface RenderedArtifact {
@@ -90,6 +103,10 @@ export interface RenderedArtifact {
   output_path: string;
   bytes: number;
   warnings: string[];
+  /** The file on the LAN: `<lan base>/renders/<path under the render directory>`. */
+  url?: string;
+  /** The same file through the tunnel (needs a Cloudflare Access login). */
+  public_url?: string;
   linearized?: boolean;
   epubcheck_passed?: boolean;
   content?: string;
@@ -102,8 +119,20 @@ const PANDOC_READER = "markdown+citations+fancy_lists+fenced_divs+header_attribu
  * A relative `outputDir` is a subdirectory of that base and may not climb out of it with `..`;
  * an absolute `outputDir` is used as given.
  */
+export function renderBaseDir(rootDir: string = PROJECT_ROOT): string {
+  return resolve(rootDir, process.env.IASP_RENDER_DIR ?? "build/renders");
+}
+
+/** `<base>/renders/<path>` for a file inside the render directory; undefined for one outside it. */
+export function renderUrl(base: string | undefined, renderDir: string, filePath: string): string | undefined {
+  if (!base) return undefined;
+  const rel = relative(renderDir, filePath);
+  if (!rel || rel === ".." || rel.startsWith(`..${sep}`) || isAbsolute(rel)) return undefined;
+  return `${base.replace(/\/+$/, "")}/renders/${rel.split(sep).map(encodeURIComponent).join("/")}`;
+}
+
 export function resolveOutputDir(rootDir: string, outputDir?: string): string {
-  const base = resolve(rootDir, process.env.IASP_RENDER_DIR ?? "build/renders");
+  const base = renderBaseDir(rootDir);
   if (!outputDir?.trim()) return base;
   if (isAbsolute(outputDir)) return resolve(outputDir);
   const target = resolve(base, outputDir);
@@ -124,6 +153,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   let inputPath: string;
   let tempInputPath: string | null = null;
   let tempBibPath: string | null = null;
+  let tempFetchedBibPath: string | null = null;
   let tempProvenancePath: string | null = null;
   let rawMarkdown: string;
   let aiMetadata: AiDisclosureMetadata | undefined = options.aiMetadata;
@@ -176,7 +206,12 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   const docTitle = options.title ?? frontmatter.title ?? baseStem;
   const docLang = frontmatter.lang ?? "en";
 
-  const provenanceManifest = options.provenanceManifest ?? (await buildProvenanceManifest(rawMarkdown));
+  const env = options.env ?? process.env;
+  const quoteLookup = options.provenanceManifest
+    ? undefined
+    : await fetchQuotes([...scanMarkdownProvenanceSeeds(rawMarkdown).quoteMarkers.keys()], env);
+  const provenanceManifest = options.provenanceManifest ?? (await buildProvenanceManifest(rawMarkdown, env, quoteLookup));
+  const { lookup: _lookup, ...quoteReport } = await checkQuotes(rawMarkdown, { env, lookup: quoteLookup });
   if (Object.keys(provenanceManifest.quotes).length > 0 || Object.keys(provenanceManifest.concepts).length > 0) {
     tempProvenancePath = resolve(outDir, `.tmp-provenance-${process.pid}-${Date.now()}.json`);
     writeFileSync(tempProvenancePath, JSON.stringify(provenanceManifest), "utf8");
@@ -184,9 +219,22 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
 
   const toolchain = detectToolchain();
   const artifacts: RenderedArtifact[] = [];
+  const renderDir = renderBaseDir(rootDir);
+  const located = (outPath: string) => {
+    const displayPath = relative(rootDir, outPath);
+    const url = renderUrl(options.urls?.lan, renderDir, outPath);
+    const publicUrl = renderUrl(options.urls?.public, renderDir, outPath);
+    return {
+      output_path: displayPath.startsWith("..") ? outPath : displayPath || outPath,
+      ...(url ? { url } : {}),
+      ...(publicUrl ? { public_url: publicUrl } : {}),
+    };
+  };
+  let bibliographyReport: BibliographyReport | undefined;
 
   try {
     let bibliographyPath: string | undefined;
+    const bibWarnings: string[] = [];
     if (tempBibPath) {
       bibliographyPath = tempBibPath;
     } else if (options.bibliography) {
@@ -198,6 +246,34 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         resolve(rootDir, frontmatter.bibliography),
         resolve(rootDir, "demo", frontmatter.bibliography),
       ].find((p) => existsSync(p));
+      if (!bibliographyPath) bibWarnings.push(`The frontmatter bibliography '${frontmatter.bibliography}' was not found.`);
+    }
+
+    // Entries for cited keys the author's bibliography lacks, from holdings-mcp (Zotero) and corpus-mcp (Calibre).
+    const bibliographyPaths = bibliographyPath ? [bibliographyPath] : [];
+    const cited = citedKeys(extractFrontmatter(rawMarkdown).bodyLines.join("\n"));
+    const citedAll = [...cited.bracketed, ...cited.narrative];
+    if (citedAll.length) {
+      const authorKeys = tempBibPath
+        ? bibtexKeys(readFileSync(tempBibPath, "utf8"))
+        : bibliographyPath
+          ? bibliographyFileKeys(bibliographyPath)
+          : new Set<string>();
+      if (authorKeys === null) {
+        bibWarnings.push(`Could not read the keys of ${relative(rootDir, bibliographyPath!)}, so no missing entries were fetched.`);
+      } else {
+        const fetched = await fetchBibliography(citedAll, { authorKeys, required: cited.bracketed, env });
+        bibliographyReport = fetched.report;
+        if (fetched.items.length) {
+          tempFetchedBibPath = resolve(outDir, `.tmp-refs-fetched-${process.pid}-${Date.now()}.json`);
+          writeFileSync(tempFetchedBibPath, JSON.stringify(fetched.items), "utf8");
+          bibliographyPaths.push(tempFetchedBibPath);
+        }
+      }
+    }
+    if (bibWarnings.length) {
+      bibliographyReport ??= { sources: {}, missing: [], ambiguous: [], unfiled: [], warnings: [] };
+      bibliographyReport.warnings.unshift(...bibWarnings);
     }
     let cslPath: string | undefined;
     if (options.csl) {
@@ -206,7 +282,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
     }
 
     const citeOptions = {
-      bibliographyPath,
+      bibliographyPaths,
       cslPath,
       lang: docLang,
       cwd: rootDir,
@@ -228,11 +304,9 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         const mdContent = cited.content;
         const outPath = resolve(outDir, `${baseStem}.md`);
         writeFileSync(outPath, mdContent, "utf8");
-        const displayPath = relative(rootDir, outPath);
-        const cleanOutputPath = displayPath.startsWith("..") ? outPath : displayPath || outPath;
         artifacts.push({
           format: "md",
-          output_path: cleanOutputPath,
+          ...located(outPath),
           bytes: Buffer.byteLength(mdContent, "utf8"),
           warnings: cited.warnings,
           ...(options.returnContent ? { content: mdContent } : {}),
@@ -255,11 +329,9 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         const ghostContent = cited.content;
         const outPath = resolve(outDir, `${baseStem}-ghost.md`);
         writeFileSync(outPath, ghostContent, "utf8");
-        const displayPath = relative(rootDir, outPath);
-        const cleanOutputPath = displayPath.startsWith("..") ? outPath : displayPath || outPath;
         artifacts.push({
           format: "ghost",
-          output_path: cleanOutputPath,
+          ...located(outPath),
           bytes: Buffer.byteLength(ghostContent, "utf8"),
           warnings: cited.warnings,
           ...(options.returnContent ? { content: ghostContent } : {}),
@@ -299,8 +371,8 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         args.push("-M", `provenance-manifest=${tempProvenancePath}`);
       }
 
-      if (bibliographyPath) {
-        args.push("--citeproc", `--bibliography=${bibliographyPath}`);
+      if (bibliographyPaths.length) {
+        args.push("--citeproc", ...bibliographyPaths.map((b) => `--bibliography=${b}`));
       }
       if (cslPath) {
         args.push(`--csl=${cslPath}`);
@@ -385,11 +457,9 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         }
 
         const st = statSync(outPath);
-        const displayPath = relative(rootDir, outPath);
-        const cleanOutputPath = displayPath.startsWith("..") ? outPath : displayPath || outPath;
         artifacts.push({
           format,
-          output_path: cleanOutputPath,
+          ...located(outPath),
           bytes: st.size,
           warnings,
           ...(format === "pdf" || format === "pdf-print" ? { linearized } : {}),
@@ -403,6 +473,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   } finally {
     if (tempInputPath) rmSync(tempInputPath, { force: true });
     if (tempBibPath) rmSync(tempBibPath, { force: true });
+    if (tempFetchedBibPath) rmSync(tempFetchedBibPath, { force: true });
     if (tempProvenancePath) rmSync(tempProvenancePath, { force: true });
   }
 
@@ -410,7 +481,8 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
     source: options.markdown !== undefined ? "(inline markdown)" : relative(rootDir, inputPath) || inputPath,
     title: docTitle,
     stage,
-    provenance: provenanceManifest,
+    provenance: { ...provenanceManifest, ...quoteReport },
+    ...(bibliographyReport ? { bibliography: bibliographyReport } : {}),
     artifacts,
   };
 }

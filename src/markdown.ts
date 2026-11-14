@@ -51,7 +51,14 @@ export interface ValidationIssue {
     | "nested-shorthand"
     | "missing-include"
     | "unstyled-note-modifier"
-    | "epigraph-blockquote";
+    | "epigraph-blockquote"
+    | "quote-text-differs"
+    | "quote-text-unchecked"
+    | "quote-citekey-differs"
+    | "quote-citation-missing"
+    | "quote-locator-differs"
+    | "quote-marker-orphan"
+    | "unmarked-block-quote";
   line: number;
   message: string;
   suggestion?: string;

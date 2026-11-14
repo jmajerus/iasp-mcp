@@ -165,28 +165,74 @@ export function scanMarkdownProvenanceSeeds(markdown: string): {
   return { quoteMarkers, conceptKeys };
 }
 
-async function fetchQuoteFromMcp(
-  quoteBaseUrl: string,
+/** A quote as quote-mcp has it: provenance plus the saved words and the citation cite_quote builds. */
+export interface FetchedQuote extends QuoteProvenance {
+  /** "quote" or "note" (a note has no quoted words). */
+  kind?: string;
+  /** The saved words (get_quote's `text`, which is exactly cite_quote's `quote`). */
+  text?: string;
+  /** cite_quote's Pandoc locator, e.g. "p. 44" or "chap. 4" (falls back to get_quote's locator). */
+  locatorText?: string;
+}
+
+export interface QuoteLookup {
+  quotes: Map<number, FetchedQuote>;
+  /** Set when quote-mcp could not be asked at all (disabled or unreachable). */
+  unavailable?: string;
+  /** Per-quote failures (e.g. an unknown id). */
+  errors: Map<number, string>;
+}
+
+export function quoteBaseFromEnv(env: NodeJS.ProcessEnv = process.env): string | null {
+  const raw = env.QUOTE_BASE?.trim() ?? "";
+  return raw.toLowerCase() === "off" ? null : raw || DEFAULT_QUOTE_BASE;
+}
+
+function toolText(res: unknown): { text?: string; isError: boolean } {
+  const r = res as { content?: { type: string; text?: string }[]; isError?: boolean };
+  return { text: r.content?.find((c) => c.type === "text")?.text, isError: Boolean(r.isError) };
+}
+
+/** Look quotes up in quote-mcp (get_quote for tags and work, cite_quote for the words and citation). */
+export async function fetchQuotes(
   quoteIds: number[],
-  timeoutMs = 3000,
-): Promise<Map<number, QuoteProvenance>> {
-  const map = new Map<number, QuoteProvenance>();
-  if (!quoteIds.length) return map;
+  env: NodeJS.ProcessEnv = process.env,
+  timeoutMs = 5000,
+): Promise<QuoteLookup> {
+  const quotes = new Map<number, FetchedQuote>();
+  const errors = new Map<number, string>();
+  if (!quoteIds.length) return { quotes, errors };
+  const quoteBase = quoteBaseFromEnv(env);
+  if (!quoteBase) return { quotes, errors, unavailable: "quote lookup is disabled (QUOTE_BASE=off)" };
 
   const client = new Client({ name: "iasp-mcp-provenance", version: "0.1.0" });
-  const transport = new StreamableHTTPClientTransport(new URL(`${quoteBaseUrl.replace(/\/+$/, "")}/mcp`), {
+  const transport = new StreamableHTTPClientTransport(new URL(`${quoteBase.replace(/\/+$/, "")}/mcp`), {
     requestInit: { signal: AbortSignal.timeout(timeoutMs) },
   });
 
   try {
     await client.connect(transport);
+  } catch (error) {
+    await client.close().catch(() => {});
+    return {
+      quotes,
+      errors,
+      unavailable: `quote-mcp at ${quoteBase} is unreachable (${error instanceof Error ? error.message : String(error)})`,
+    };
+  }
+
+  try {
     for (const id of quoteIds) {
       try {
-        const res = await client.callTool({ name: "get_quote", arguments: { id } });
-        const text = (res.content as { type: string; text?: string }[] | undefined)?.[0]?.text;
-        if (!text) continue;
-        const data = JSON.parse(text) as {
+        const got = toolText(await client.callTool({ name: "get_quote", arguments: { id } }));
+        if (got.isError || !got.text) {
+          errors.set(id, got.text?.trim() || "get_quote returned nothing");
+          continue;
+        }
+        const data = JSON.parse(got.text) as {
           id?: number;
+          kind?: string;
+          text?: string | null;
           locator?: string | null;
           tags?: { tag?: string; concept?: string | null }[];
           work?: {
@@ -197,6 +243,13 @@ async function fetchQuoteFromMcp(
             id?: number;
           };
         };
+        let cite: { quote?: string | null; citekey?: string | null; locator_text?: string | null } = {};
+        try {
+          const c = toolText(await client.callTool({ name: "cite_quote", arguments: { id } }));
+          if (!c.isError && c.text) cite = JSON.parse(c.text);
+        } catch {
+          // A note or an uncitable work: fall back to get_quote's fields.
+        }
         const concepts: string[] = [];
         for (const t of data.tags ?? []) {
           if (t.concept) {
@@ -210,24 +263,28 @@ async function fetchQuoteFromMcp(
             : data.work?.id
               ? `quote:${data.work.id}`
               : undefined;
-        map.set(id, {
+        const citekey = cite.citekey || data.work?.citekey || undefined;
+        const text = data.kind === "note" ? undefined : (data.text ?? cite.quote ?? undefined);
+        const locatorText = cite.locator_text || data.locator || undefined;
+        quotes.set(id, {
           id,
-          ...(data.work?.citekey ? { citekey: data.work.citekey } : {}),
+          ...(citekey ? { citekey } : {}),
           ...(workKey ? { workKey } : {}),
           ...(data.work?.title ? { workTitle: data.work.title } : {}),
           ...(data.locator ? { locator: data.locator } : {}),
           concepts,
+          ...(data.kind ? { kind: data.kind } : {}),
+          ...(text ? { text } : {}),
+          ...(locatorText ? { locatorText } : {}),
         });
-      } catch {
-        // Ignore individual quote lookup errors
+      } catch (error) {
+        errors.set(id, error instanceof Error ? error.message : String(error));
       }
     }
-  } catch {
-    // quote-mcp unreachable or offline; graceful fallback to inline attributes
   } finally {
     await client.close().catch(() => {});
   }
-  return map;
+  return { quotes, errors };
 }
 
 async function resolveTermFromTerminology(
@@ -274,17 +331,13 @@ async function resolveTermFromTerminology(
 export async function buildProvenanceManifest(
   markdown: string,
   env: NodeJS.ProcessEnv = process.env,
+  lookup?: QuoteLookup,
 ): Promise<ProvenanceManifest> {
   const { quoteMarkers, conceptKeys } = scanMarkdownProvenanceSeeds(markdown);
   const quotes: Record<string, QuoteProvenance> = {};
   const concepts: Record<string, ExternalConceptRef> = {};
 
-  const quoteBaseRaw = env.QUOTE_BASE?.trim() ?? "";
-  const quoteBase = quoteBaseRaw.toLowerCase() === "off" ? null : (quoteBaseRaw || DEFAULT_QUOTE_BASE);
-
-  const fetchedQuotes = quoteBase
-    ? await fetchQuoteFromMcp(quoteBase, [...quoteMarkers.keys()])
-    : new Map<number, QuoteProvenance>();
+  const fetchedQuotes = (lookup ?? (await fetchQuotes([...quoteMarkers.keys()], env))).quotes;
 
   for (const [id, marker] of quoteMarkers.entries()) {
     const remote = fetchedQuotes.get(id);
