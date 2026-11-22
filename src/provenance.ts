@@ -214,10 +214,9 @@ export async function fetchQuotes(
   }
 
   try {
-    const transport = new StreamableHTTPClientTransport(endpoint, {
-      requestInit: { signal: AbortSignal.timeout(timeoutMs) },
-    });
-    await client.connect(transport);
+    // The timeout goes on each request. The SDK replaces `requestInit.signal` with its own abort controller, so a
+    // signal passed there is ignored and every call would wait for the SDK's 60-second default instead.
+    await client.connect(new StreamableHTTPClientTransport(endpoint), { timeout: timeoutMs });
   } catch (error) {
     await client.close().catch(() => {});
     return {
@@ -230,7 +229,7 @@ export async function fetchQuotes(
   try {
     for (const id of quoteIds) {
       try {
-        const got = toolText(await client.callTool({ name: "get_quote", arguments: { id } }));
+        const got = toolText(await client.callTool({ name: "get_quote", arguments: { id } }, undefined, { timeout: timeoutMs }));
         if (got.isError || !got.text) {
           errors.set(id, got.text?.trim() || "get_quote returned nothing");
           continue;
@@ -251,7 +250,7 @@ export async function fetchQuotes(
         };
         let cite: { quote?: string | null; citekey?: string | null; locator_text?: string | null } = {};
         try {
-          const c = toolText(await client.callTool({ name: "cite_quote", arguments: { id } }));
+          const c = toolText(await client.callTool({ name: "cite_quote", arguments: { id } }, undefined, { timeout: timeoutMs }));
           if (!c.isError && c.text) cite = JSON.parse(c.text);
         } catch {
           // A note or an uncitable work: fall back to get_quote's fields.
