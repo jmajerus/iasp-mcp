@@ -185,6 +185,13 @@ describe("render output names: same file, other name", () => {
       const build = await renderDocument({ source, formats: ["md"], outputDir: dir });
       expect(readFileSync(source, "utf8")).toBe(text);
       expect(build.artifacts[0].output_path).toBe(join(dir, "review-rendered.md"));
+
+      // The fallback name can be another link to the source as well: it is skipped too.
+      rmSync(join(dir, "review-rendered.md"));
+      linkSync(source, join(dir, "review-rendered.md"));
+      const again = await renderDocument({ source, formats: ["md"], outputDir: dir });
+      expect(readFileSync(source, "utf8")).toBe(text);
+      expect(again.artifacts[0].output_path).toBe(join(dir, "review-rendered-2.md"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -218,12 +225,21 @@ describe("quote markers in the Ghost exporter", () => {
   });
 
   it("ends a run-in where Ghost ends the paragraph, and wraps one that opens with inline HTML", () => {
-    for (const next of ["## A heading", "- a list item", "1. an ordered item", "> a block quote", "<div>raw block</div>", "---"]) {
+    for (const next of ["## A heading", "- a list item", "1. an ordered item", "> a block quote", "<div>raw block</div>", "***"]) {
       const out = ghost(["<!-- quote 5 -->", "A run-in paragraph", "that wraps a line.", next].join("\n"));
       expect(out, next).toMatch(/data-quote-id="5"[^>]*>\n\nA run-in paragraph\nthat wraps a line\.\n\n<\/div>\n/);
     }
     // A wrapped line that only looks like a list number stays in the paragraph, as CommonMark keeps it.
     expect(ghost(["<!-- quote 5 -->", "It began in", "1999. Then it ended."].join("\n"))).toMatch(/1999\. Then it ended\.\n\n<\/div>/);
+
+    // `---` or `===` under the lines makes them a Setext heading, not a quoted passage: left whole and unwrapped.
+    for (const underline of ["---", "==="]) {
+      const heading = ghost(["<!-- quote 5 -->", "A marked heading", underline, "", "Body."].join("\n"));
+      expect(heading, underline).not.toContain("data-quote-id");
+      expect(heading, underline).toContain(`A marked heading\n${underline}\n`);
+    }
+    // A spaced `- - -` is a thematic break, which does end the paragraph.
+    expect(ghost(["<!-- quote 5 -->", "A run-in paragraph.", "- - -"].join("\n"))).toMatch(/A run-in paragraph\.\n\n<\/div>\n- - -/);
 
     const inline = ghost(["<!-- quote 6 -->", "<em>Quoted words</em> open this paragraph [@k, p. 1]."].join("\n"));
     expect(inline).toMatch(/data-quote-id="6"[^>]*>\n\n<em>Quoted words<\/em>/);

@@ -45,6 +45,11 @@ const PARAGRAPH_INTERRUPT_RE = new RegExp(
   `^\\s{0,3}(?:#{1,6}(?:\\s|$)|>|[-*+]\\s+\\S|1[.)]\\s+\\S|\`{3}|~{3}|:{3}|(?:[-*_][ \\t]*){3,}$|${HTML_BLOCK_START})`,
   "i",
 );
+/**
+ * Under paragraph text, a line of only `=` or only `-` makes that text a Setext heading (so `---` there is
+ * an underline, not a thematic break).
+ */
+const SETEXT_UNDERLINE_RE = /^\s{0,3}(?:=+|-+)\s*$/;
 /** The first line of an ordinary paragraph: none of the above, nor a table row, footnote, or other list item. */
 const RUN_IN_PARAGRAPH_RE = /^\s{0,3}(?![-*+]\s|\d+[.)]\s|\||\[\^[^\]]+\]:)\S/;
 const startsRunIn = (line: string) => RUN_IN_PARAGRAPH_RE.test(line) && !PARAGRAPH_INTERRUPT_RE.test(line);
@@ -684,7 +689,14 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
         } else if (startsRunIn(node.text)) {
           // A run-in quote: the paragraph that quotes the marked words.
           // It ends where Ghost ends it: at a blank line, a marker, or a line that starts another block.
-          block = [node.text, ...collect(idx + 1, (l) => l.trim() !== "" && !parseQuoteMarkerComment(l) && !PARAGRAPH_INTERRUPT_RE.test(l))];
+          const lines = [node.text, ...collect(idx + 1, (l) => l.trim() !== "" && !parseQuoteMarkerComment(l) && !PARAGRAPH_INTERRUPT_RE.test(l) && !SETEXT_UNDERLINE_RE.test(l))];
+          const after = nodeList[idx + lines.length];
+          if (after?.kind === "text" && SETEXT_UNDERLINE_RE.test(after.text)) {
+            // `===` or `---` under the lines makes them a Setext heading, not a paragraph: the markers lapse.
+            parts.push(node.text);
+            continue;
+          }
+          block = lines;
         } else {
           // A heading, list, table, code, or raw HTML: not a quoted passage, so the markers lapse.
           parts.push(node.text);

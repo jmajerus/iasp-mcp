@@ -247,8 +247,11 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   const outputFor = (name: string): { outPath: string; renamed?: string } => {
     const outPath = resolve(outDir, name);
     if (!isSource(outPath)) return { outPath };
+    // The fallback can name the source too (another link to it, or a case-folded alias): take the first that doesn't.
     const ext = extname(name);
-    const renamedPath = resolve(outDir, `${name.slice(0, name.length - ext.length)}-rendered${ext}`);
+    const stem = name.slice(0, name.length - ext.length);
+    let renamedPath = resolve(outDir, `${stem}-rendered${ext}`);
+    for (let n = 2; isSource(renamedPath); n++) renamedPath = resolve(outDir, `${stem}-rendered-${n}${ext}`);
     return {
       outPath: renamedPath,
       renamed: `The output would have overwritten the source ${basename(inputPath)}, so it was written to ${basename(renamedPath)}.`,
