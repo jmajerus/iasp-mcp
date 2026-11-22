@@ -231,6 +231,18 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
     };
   };
   let bibliographyReport: BibliographyReport | undefined;
+  // An output named like the source (`output_dir` = the source's folder) gets `-rendered` so the source is never overwritten.
+  const sourcePath = tempInputPath ? null : resolve(inputPath);
+  const outputFor = (name: string): { outPath: string; renamed?: string } => {
+    const outPath = resolve(outDir, name);
+    if (outPath !== sourcePath) return { outPath };
+    const ext = extname(name);
+    const renamedPath = resolve(outDir, `${name.slice(0, name.length - ext.length)}-rendered${ext}`);
+    return {
+      outPath: renamedPath,
+      renamed: `The output would have overwritten the source ${basename(inputPath)}, so it was written to ${basename(renamedPath)}.`,
+    };
+  };
 
   try {
     let bibliographyPath: string | undefined;
@@ -302,13 +314,13 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
           citeOptions,
         );
         const mdContent = cited.content;
-        const outPath = resolve(outDir, `${baseStem}.md`);
+        const { outPath, renamed } = outputFor(`${baseStem}.md`);
         writeFileSync(outPath, mdContent, "utf8");
         artifacts.push({
           format: "md",
           ...located(outPath),
           bytes: Buffer.byteLength(mdContent, "utf8"),
-          warnings: cited.warnings,
+          warnings: renamed ? [renamed, ...cited.warnings] : cited.warnings,
           ...(options.returnContent ? { content: mdContent } : {}),
         });
         continue;
@@ -327,13 +339,13 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
           citeOptions,
         );
         const ghostContent = cited.content;
-        const outPath = resolve(outDir, `${baseStem}-ghost.md`);
+        const { outPath, renamed } = outputFor(`${baseStem}-ghost.md`);
         writeFileSync(outPath, ghostContent, "utf8");
         artifacts.push({
           format: "ghost",
           ...located(outPath),
           bytes: Buffer.byteLength(ghostContent, "utf8"),
-          warnings: cited.warnings,
+          warnings: renamed ? [renamed, ...cited.warnings] : cited.warnings,
           ...(options.returnContent ? { content: ghostContent } : {}),
         });
         continue;
@@ -351,7 +363,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         docx: `${baseStem}.docx`,
         rtf: `${baseStem}.rtf`,
       };
-      const outPath = resolve(outDir, extMap[format]);
+      const { outPath, renamed } = outputFor(extMap[format]);
 
       const args: string[] = [
         inputPath,
@@ -433,6 +445,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
           .split(/\r?\n/)
           .map((l) => l.trim())
           .filter(Boolean);
+        if (renamed) warnings.unshift(renamed);
 
         let linearized = false;
         if ((format === "pdf" || format === "pdf-print") && (options.optimizePdf ?? true) && toolchain.qpdf.available) {

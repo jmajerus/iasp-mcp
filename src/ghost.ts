@@ -33,6 +33,8 @@ const WORKS_CITED_HEADING_RE = /^\s*##+\s+(Works Cited|References|Bibliography)\
 const FENCE_CLOSER_RE = /^:::\s*$/;
 const SINGLE_LINE_FENCE_RE = /^(:::\s*\{[^}]+\})\s+(.*?)\s*:::$/;
 const INLINE_CONTENT_FENCE_RE = /^(:::\s*\{[^}]+\})\s+(.+?)\s*$/;
+/** The first line of an ordinary paragraph: not a heading, list item, table, raw HTML, code fence, div fence, or footnote. */
+const RUN_IN_PARAGRAPH_RE = /^\s{0,3}(?!#{1,6}(?:\s|$)|[-*+]\s|\d+[.)]\s|\||<|`{3}|~{3}|:{3}|\[\^[^\]]+\]:)\S/;
 
 export interface TextLineNode {
   kind: "text";
@@ -626,46 +628,67 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
     };
   };
 
+  // One `iasp-quote` wrapper per marker, the first marker outermost.
+  const wrapQuotes = (content: string, quotes: Array<QuoteProvenance | ParsedQuoteMarker>): string =>
+    quotes.reduceRight(
+      (inner, q) => `<div ${buildSkosBlockAttributes(["iasp-quote"], { quoteInfo: q, manifest })}>\n\n${inner}\n\n</div>`,
+      content,
+    );
+
   const renderNodes = (nodeList: AstNode[], currentBaseDir: string): string => {
     const parts: string[] = [];
-    let pendingQuote: QuoteProvenance | ParsedQuoteMarker | undefined;
+    // Markers waiting for the block they mark. Markers on consecutive lines all mark the same block.
+    // Any block consumes them, so a marker never reaches past the block right after it.
+    let pendingQuotes: Array<QuoteProvenance | ParsedQuoteMarker> = [];
+
+    // Consecutive text lines from `idx` for which `keep` holds.
+    const collect = (idx: number, keep: (line: string) => boolean): string[] => {
+      const lines: string[] = [];
+      for (let k = idx; k < nodeList.length && nodeList[k].kind === "text" && keep((nodeList[k] as TextLineNode).text); k++) {
+        lines.push((nodeList[k] as TextLineNode).text);
+      }
+      return lines;
+    };
 
     for (let idx = 0; idx < nodeList.length; idx++) {
       const node = nodeList[idx];
       if (node.kind === "text") {
         const qm = parseQuoteMarkerComment(node.text);
         if (qm) {
-          pendingQuote = resolveQuoteMarker(qm);
+          pendingQuotes.push(resolveQuoteMarker(qm));
           parts.push(node.text);
           continue;
         }
-        if (pendingQuote && node.text.trim().startsWith(">")) {
-          const quoteLines: string[] = [node.text];
-          while (idx + 1 < nodeList.length && nodeList[idx + 1].kind === "text") {
-            const nextText = (nodeList[idx + 1] as TextLineNode).text;
-            if (nextText.trim().startsWith(">")) {
-              quoteLines.push(nextText);
-              idx++;
-            } else {
-              break;
-            }
-          }
-          if (mode === "ghost") {
-            const skosAttrs = buildSkosBlockAttributes(["iasp-quote"], { quoteInfo: pendingQuote, manifest });
-            parts.push(`<div ${skosAttrs}>\n\n${quoteLines.join("\n")}\n\n</div>`);
-          } else {
-            parts.push(quoteLines.join("\n"));
-          }
-          pendingQuote = undefined;
+        if (!pendingQuotes.length || node.text.trim() === "") {
+          parts.push(node.text);
           continue;
         }
-        parts.push(node.text);
-      } else {
-        const q = pendingQuote;
-        if (q && !node.classes.includes("article") && !node.classes.includes("include")) {
-          pendingQuote = undefined;
+        const quotes = pendingQuotes;
+        pendingQuotes = [];
+        let block: string[];
+        if (node.text.trim().startsWith(">")) {
+          block = collect(idx, (l) => l.trim().startsWith(">"));
+        } else if (RUN_IN_PARAGRAPH_RE.test(node.text)) {
+          // A run-in quote: the paragraph that quotes the marked words.
+          block = collect(idx, (l) => l.trim() !== "" && !parseQuoteMarkerComment(l));
+        } else {
+          // A heading, list, table, code, or raw HTML: not a quoted passage, so the markers lapse.
+          parts.push(node.text);
+          continue;
         }
-        parts.push(renderFence(node, currentBaseDir, q));
+        idx += block.length - 1;
+        parts.push(mode === "ghost" ? wrapQuotes(block.join("\n"), quotes) : block.join("\n"));
+      } else {
+        if (!pendingQuotes.length || node.classes.includes("article") || node.classes.includes("include")) {
+          pendingQuotes = [];
+          parts.push(renderFence(node, currentBaseDir));
+          continue;
+        }
+        // The marker nearest the fence binds to its container; any earlier ones wrap it.
+        const quotes = pendingQuotes;
+        pendingQuotes = [];
+        const rendered = renderFence(node, currentBaseDir, quotes[quotes.length - 1]);
+        parts.push(mode === "ghost" && quotes.length > 1 && rendered.trim() ? wrapQuotes(rendered, quotes.slice(0, -1)) : rendered);
       }
     }
     return parts.join("\n");

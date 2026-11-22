@@ -57,7 +57,7 @@ You can attach external concepts and provenance in two ways (and combine them):
    > We like to think our beliefs are founded on a fair survey of the best available evidence... [@brotherton2015suspicious, chap. 11]
    ```
    Or write a bare marker (`<!-- quote 831 -->`) and let `iasp-mcp` fetch the quote's concepts, `citekey`, `workKey`, and `locator` automatically from `quote-mcp` at build time.
-   A quote marker immediately preceding an `::: {.epigraph}` block binds its attributes directly onto the epigraph container; a quote marker preceding a standard Markdown blockquote (`> ...`) wraps the blockquote in `<div class="iasp-quote" ...>`.
+   A quote marker immediately preceding an `::: {.epigraph}` block binds its attributes directly onto the epigraph container; a quote marker preceding a standard Markdown blockquote (`> ...`) or an ordinary paragraph (a run-in quote) wraps it in `<div class="iasp-quote" ...>`, in HTML and Ghost alike. A marker binds only to the block right after it: a heading, list, or table after a marker ends it. Markers on consecutive lines mark the same block, and each gets its own `iasp-quote` wrapper, the first outermost.
 
 2. **On any IASP fenced block (`concepts="..."`)**:
    ```markdown

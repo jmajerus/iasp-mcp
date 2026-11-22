@@ -12,7 +12,8 @@ import { type FetchedQuote, type QuoteLookup, fetchQuotes } from "./provenance.j
  * A `<!-- quote <id> -->` marker on the line before a block quote says the block quote is that saved
  * quote word for word; a marker before an ordinary paragraph (a run-in quote) says the saved words
  * appear unchanged somewhere in it. Fence openers (`::: {.epigraph}`) between the marker and the
- * passage are skipped. The passage's citation is compared with the quote's citekey and locator.
+ * passage are skipped, and markers on consecutive lines all mark the passage after the last of them
+ * (a paragraph that quotes two saved quotes). The passage's citation is compared with the quote's citekey and locator.
  * Same rules as holdings-mcp's portal-article check-draft.mjs.
  */
 
@@ -35,7 +36,7 @@ export interface UnmarkedBlockQuote {
 }
 
 /**
- * `excerpt`: a block quote that quotes part of the saved text, unchanged (a warning).
+ * `excerpt`: a block quote, or a quoted span in a run-in paragraph, that quotes part of the saved text unchanged (a warning).
  * `note`: the id is a note in quote-mcp (the author's own words), so there are no quoted words to compare.
  */
 export type TextStatus = "matches" | "excerpt" | "differs" | "unchecked" | "note";
@@ -74,6 +75,8 @@ const FENCE_OPEN_RE = /^\s*:{3,}\s*\S/;
 const FENCE_LINE_RE = /^\s*:{3,}/;
 const FOOTNOTE_DEF_RE = /^\[\^([^\]\s]+)\]:\s?(.*)$/;
 const FOOTNOTE_REF_RE = /\[\^([^\]\s]+)\]/g;
+/** A run-in excerpt shorter than this is too slight to say which saved words it quotes. */
+const RUN_IN_EXCERPT_MIN_WORDS = 3;
 
 /**
  * Quoted words only: no citations (bracketed `[@key, p. 3]` or narrative `@key` / `@key [p. 3]`),
@@ -189,8 +192,9 @@ export function scanQuotePassages(markdown: string): { passages: QuotePassage[];
     const id = Number(m[2]);
     if (!Number.isSafeInteger(id) || id <= 0) continue;
 
+    // Markers on consecutive lines all mark the passage after the last of them.
     let j = i + 1;
-    while (j < lines.length && FENCE_OPEN_RE.test(lines[j]) && !code[j]) j++;
+    while (j < lines.length && !code[j] && (FENCE_OPEN_RE.test(lines[j]) || MARKER_RE.test(lines[j]))) j++;
 
     let kind: QuotePassage["kind"] = "none";
     let raw = "";
@@ -327,6 +331,26 @@ function compareText(passage: QuotePassage, saved: string): TextResult {
   // A sentence quoted inside another gives up its closing punctuation to the host sentence.
   want = want.replace(/[.,;:]+$/, "");
   if (draft.includes(want)) return { text: "matches" };
+  // A run-in that quotes part of the saved words: the longest quoted span (three words or more) that is
+  // an unchanged run of them, or runs joined by ellipses. Its own closing punctuation may belong to the host sentence.
+  let best: { span: string; ex: NonNullable<ReturnType<typeof excerptOf>> } | undefined;
+  for (const m of draft.matchAll(/"([^"]+)"/g)) {
+    const span = m[1].trim().replace(/[.,;:!?]+$/, "");
+    if (span.split(" ").length < RUN_IN_EXCERPT_MIN_WORDS) continue;
+    const ex = excerptOf(span, want);
+    if (ex && (!best || span.length > best.span.length)) best = { span, ex };
+  }
+  if (best) {
+    return {
+      text: "excerpt",
+      reason:
+        best.ex.excerpt === "contiguous"
+          ? "the paragraph quotes a contiguous part of the saved quote"
+          : `the paragraph quotes ${best.ex.pieces} parts of the saved quote joined by ellipses`,
+      excerpt: best.ex.excerpt,
+      ...(best.ex.excerpt === "elided" ? { pieces: best.ex.pieces } : {}),
+    };
+  }
   // The longest leading part of the saved words that appears in the paragraph locates the difference.
   let lo = 0;
   let hi = want.length;
@@ -383,7 +407,10 @@ function checkPassage(passage: QuotePassage, lookup: QuoteLookup): QuoteCheck {
     citekey = "unchecked";
     cited = passage.citations[0];
   } else {
-    cited = passage.citations.find((c) => c.key === remote.citekey);
+    // A paragraph can cite the same work at several places (two quotes from one book): prefer the citation at the saved place.
+    const sameWork = passage.citations.filter((c) => c.key === remote.citekey);
+    const savedLocator = remote.locatorText;
+    cited = (savedLocator ? sameWork.find((c) => c.locator && locatorsAgree(c.locator, savedLocator)) : undefined) ?? sameWork[0];
     citekey = cited ? "matches" : "differs";
     cited ??= passage.citations[0];
   }

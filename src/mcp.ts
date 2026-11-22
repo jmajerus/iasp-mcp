@@ -188,7 +188,7 @@ export function createServer(db: DB, options: CreateServerOptions = {}): McpServ
           .string()
           .optional()
           .describe("Output directory. Relative paths are subdirectories of the server's render directory (IASP_RENDER_DIR, default build/renders) and may not escape it with '..'; absolute paths are used as given"),
-        output_basename: z.string().optional().describe("Base filename without extension"),
+        output_basename: z.string().optional().describe("Base filename without extension. An output that would overwrite the source file is written as '<name>-rendered.<ext>' instead, with a warning"),
         stage: z.enum(["final", "draft"]).optional().describe("Build stage: 'final' (default, hides .draft) or 'draft' (shows .draft, hides .final)"),
         bibliography: z
           .string()

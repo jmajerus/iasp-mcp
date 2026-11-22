@@ -92,6 +92,41 @@ describe("quote text checks", () => {
     expect(r2.checks[0].reason).toContain("word for word");
   });
 
+  it("reports a run-in that quotes an unchanged part of the saved words as an excerpt warning", async () => {
+    const part = `<!-- quote 829 -->\nHanh names "a deep desire to know and understand the world," and moves on [@hanh2007fidelity, chap. 4].`;
+    const lower: FetchedQuote = { ...hanh, text: HANH.replace("EACH OF US HAS A DEEP DESIRE TO", "Each of us has a deep desire to") };
+    const r1 = await checkQuotes(part, { lookup: lookupOf(lower) });
+    expect(r1.checks[0]).toMatchObject({ kind: "run-in", text: "excerpt", excerpt: "contiguous", citekey: "matches" });
+    expect(r1.issues.map((i) => [i.severity, i.code])).toEqual([["warning", "quote-text-excerpt"]]);
+
+    const elided = `<!-- quote 829 -->\nShe writes of "a deep desire to know … a deep natural thirst" [@hanh2007fidelity, chap. 4].`;
+    expect((await checkQuotes(elided, { lookup: lookupOf(lower) })).checks[0]).toMatchObject({ text: "excerpt", excerpt: "elided", pieces: 2 });
+
+    // A changed word, or a span too short to say which words it quotes, is still an error.
+    const changed = `<!-- quote 829 -->\nHanh names "a deep wish to know and understand the world" [@hanh2007fidelity, chap. 4].`;
+    expect((await checkQuotes(changed, { lookup: lookupOf(lower) })).checks[0].text).toBe("differs");
+    const slight = `<!-- quote 829 -->\nHanh calls it "natural thirst" [@hanh2007fidelity, chap. 4].`;
+    expect((await checkQuotes(slight, { lookup: lookupOf(lower) })).checks[0].text).toBe("differs");
+  });
+
+  it("checks markers on consecutive lines against the one paragraph after them", async () => {
+    const a: FetchedQuote = { id: 891, citekey: "collet2018zero", locatorText: "p. 102", concepts: [], text: "are said to date back to around 4500 B.C.E.", kind: "quote" };
+    const b: FetchedQuote = { id: 892, citekey: "collet2018zero", locatorText: "p. 113", concepts: [], text: "having become literally blind", kind: "quote" };
+    const md = [
+      "<!-- quote 891 -->",
+      "<!-- quote 892 -->",
+      'The results "are said to date back to around 4500 B.C.E." [@collet2018zero, p. 102]. Dante appears',
+      'as "having become literally blind" [@collet2018zero, p. 113].',
+    ].join("\n");
+    const r = await checkQuotes(md, { lookup: lookupOf(a, b) });
+    expect(r.checks.map((c) => [c.id, c.line, c.kind, c.text, c.citekey, c.locator])).toEqual([
+      [891, 1, "run-in", "matches", "matches", "matches"],
+      [892, 2, "run-in", "matches", "matches", "matches"],
+    ]);
+    expect(r.checks[1].cited).toEqual({ key: "collet2018zero", locator: "p. 113" });
+    expect(r.issues).toEqual([]);
+  });
+
   it("skips fence openers after the marker and takes an epigraph's citation from its attribution line", async () => {
     const md = ["<!-- quote 829 -->", "::: {.epigraph}", HANH, "", "— Thich Nhat Hanh [@hanh2007fidelity, chap. 4]", ":::"].join("\n");
     const r = await checkQuotes(md, { lookup: lookupOf(hanh) });
