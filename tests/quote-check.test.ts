@@ -193,6 +193,57 @@ describe("quote text checks", () => {
   });
 });
 
+describe("quote-mcp client timeouts", () => {
+  it("times out each call, not the whole run, so a long run of quotes is not cut off partway", async () => {
+    // Each call takes 120 ms; six calls take ~720 ms, well past the 300 ms timeout of any one call.
+    const server = http.createServer(async (req, res) => {
+      const mcp = new McpServer({ name: "quote-slow-stub", version: "0.0.0" });
+      const reply = (v: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(v) }] });
+      const slow = () => new Promise((r) => setTimeout(r, 120));
+      mcp.registerTool("get_quote", { inputSchema: { id: z.number() } }, async ({ id }) => (await slow(), reply({ id, kind: "quote", text: HANH, locator: "chap. 4", tags: [], work: { id: 1, citekey: "hanh2007fidelity" } })));
+      mcp.registerTool("cite_quote", { inputSchema: { id: z.number() } }, async () => (await slow(), reply({ kind: "quote", quote: HANH, citekey: "hanh2007fidelity", locator_text: "chap. 4" })));
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+      res.on("close", () => void transport.close());
+      await mcp.connect(transport);
+      await transport.handleRequest(req, res);
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    try {
+      const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const lookup = await fetchQuotes([1, 2, 3], { QUOTE_BASE: base }, 300);
+      expect(lookup.unavailable).toBeUndefined();
+      expect([...lookup.errors.entries()]).toEqual([]);
+      expect([...lookup.quotes.keys()]).toEqual([1, 2, 3]);
+      expect(lookup.quotes.get(3)).toMatchObject({ citekey: "hanh2007fidelity", locatorText: "chap. 4" });
+    } finally {
+      await new Promise<void>((r) => server.close(() => r()));
+    }
+  });
+
+  it("still gives up on a call slower than the timeout", async () => {
+    const server = http.createServer(async (req, res) => {
+      const mcp = new McpServer({ name: "quote-stuck-stub", version: "0.0.0" });
+      mcp.registerTool("get_quote", { inputSchema: { id: z.number() } }, async () => {
+        await new Promise((r) => setTimeout(r, 1000));
+        return { content: [{ type: "text" as const, text: "{}" }] };
+      });
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+      res.on("close", () => void transport.close());
+      await mcp.connect(transport);
+      await transport.handleRequest(req, res);
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    try {
+      const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const lookup = await fetchQuotes([7], { QUOTE_BASE: base }, 200);
+      expect(lookup.quotes.size).toBe(0);
+      expect(lookup.errors.get(7)).toMatch(/time/i);
+    } finally {
+      await new Promise<void>((r) => server.close(() => r()));
+    }
+  });
+});
+
 describe("quote-mcp client and validate_markdown", () => {
   let server: http.Server;
   let base: string;
