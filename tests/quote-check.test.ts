@@ -252,7 +252,7 @@ describe("former citekeys", () => {
     try {
       const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       const resolve = holdingsSameWork({ HOLDINGS_BASE: base }, 300);
-      // The slow key first: each call has its own timeout, so the calls after it still go through.
+      // The slow key first: it times out on its own, and the calls after it still go through.
       const r = await resolve([
         ["slow2010x", "collet2014zero"],
         ["collet2018zero", "collet2014zero"],
