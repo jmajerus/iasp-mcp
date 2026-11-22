@@ -61,6 +61,8 @@ export interface QuoteCheck {
   locator: "matches" | "differs" | "absent" | "unchecked";
   cited?: CitationItem;
   saved?: { citekey?: string; locator?: string };
+  /** For `citekey: "differs"`: why holdings-mcp could not say whether the cited key is a former key of the same work. */
+  former_key_unchecked?: string;
 }
 
 export interface QuoteCheckReport {
@@ -431,7 +433,7 @@ function checkPassage(passage: QuotePassage, lookup: QuoteLookup, formerKeys: Se
   return { ...base, ...text, citekey, locator, ...(cited ? { cited } : {}), ...(saved ? { saved } : {}) };
 }
 
-function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavailable?: string, holdingsUnavailable?: string): ValidationIssue[] {
+function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavailable?: string): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (unavailable && checks.some((c) => c.text === "unchecked" && c.reason === unavailable)) {
     const n = checks.filter((c) => c.reason === unavailable).length;
@@ -498,7 +500,7 @@ function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavail
         severity: "error",
         code: "quote-citekey-differs",
         line: c.line,
-        message: `Quote ${c.id} (line ${c.line}) is cited as @${c.cited?.key}, but quote-mcp has it from @${c.saved?.citekey}${holdingsUnavailable ? ` (not checked as a former key of the same work: ${holdingsUnavailable})` : ""}.`,
+        message: `Quote ${c.id} (line ${c.line}) is cited as @${c.cited?.key}, but quote-mcp has it from @${c.saved?.citekey}${c.former_key_unchecked ? ` (not checked as a former key of the same work: ${c.former_key_unchecked})` : ""}.`,
         suggestion: `Cite it as ${c.saved?.locator ? `[@${c.saved?.citekey}, ${c.saved.locator}]` : `[@${c.saved?.citekey}]`}.`,
       });
     } else if (c.citekey === "missing") {
@@ -553,11 +555,16 @@ export async function checkQuotes(
     if (!saved) return;
     for (const cit of passages[i].citations) pairs.set(pairKey(cit.key, saved), [cit.key, saved]);
   });
-  let holdingsUnavailable: string | undefined;
   if (pairs.size) {
     const resolved = await (options.sameWork ?? holdingsSameWork(options.env))([...pairs.values()]);
-    holdingsUnavailable = resolved.unavailable;
     if (resolved.same.size) checks = passages.map((p) => checkPassage(p, lookup, resolved.same));
+    // A key still differing whose lookup did not happen says so, rather than reading as another work's key.
+    checks = checks.map((c, i) => {
+      if (c.citekey !== "differs" || !c.saved?.citekey) return c;
+      const saved = c.saved.citekey;
+      const why = resolved.unavailable ?? passages[i].citations.map((cit) => resolved.failed?.get(pairKey(cit.key, saved))).find(Boolean);
+      return why ? { ...c, former_key_unchecked: why } : c;
+    });
   }
 
   const unavailable = ids.length ? lookup.unavailable : undefined;
@@ -565,7 +572,7 @@ export async function checkQuotes(
     checks,
     unmarked_block_quotes: unmarked,
     ...(unavailable ? { unavailable } : {}),
-    issues: issuesFor(checks, unmarked, unavailable, holdingsUnavailable),
+    issues: issuesFor(checks, unmarked, unavailable),
     lookup,
   };
 }

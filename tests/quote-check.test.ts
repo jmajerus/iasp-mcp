@@ -212,9 +212,18 @@ describe("former citekeys", () => {
     expect(other.checks[0].citekey).toBe("differs");
     expect(other.issues[0]).toMatchObject({ severity: "error", code: "quote-citekey-differs" });
 
+    expect(other.checks[0].former_key_unchecked).toBeUndefined();
+    expect(other.issues[0].message).not.toContain("not checked");
+
     const off = await checkQuotes(md, { lookup: lookupOf(collet) }); // HOLDINGS_BASE=off in tests
     expect(off.issues[0].severity).toBe("error");
     expect(off.issues[0].message).toContain("not checked as a former key of the same work: holdings lookup is off");
+
+    // Connected, but the get_work call for this pair failed: the error says so, for this check only.
+    const failed: SameWorkResolver = async () => ({ same: new Set(), failed: new Map([[pairKey("collet2018zero", "collet2014zero"), "get_work for collet2018zero failed at holdings-mcp (timeout)"]]) });
+    const f = await checkQuotes(md, { lookup: lookupOf(collet), sameWork: failed });
+    expect(f.checks[0]).toMatchObject({ citekey: "differs", former_key_unchecked: "get_work for collet2018zero failed at holdings-mcp (timeout)" });
+    expect(f.issues[0].message).toContain("not checked as a former key of the same work: get_work for collet2018zero failed");
   });
 
   it("asks holdings-mcp's get_work which work each key names", async () => {
@@ -224,10 +233,13 @@ describe("former citekeys", () => {
       smith2001x: { key: "zotero:users/1/OTHER123", citekey: "smith2001x" },
       shared: { note: "two works", works: [{ key: "a" }, { key: "b" }] },
     };
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     const server = http.createServer(async (req, res) => {
       const mcp = new McpServer({ name: "holdings-stub", version: "0.0.0" });
-      mcp.registerTool("get_work", { inputSchema: { key: z.string() } }, ({ key }) =>
-        works[key]
+      mcp.registerTool("get_work", { inputSchema: { key: z.string() } }, async ({ key }) =>
+        key === "slow2010x"
+          ? (await sleep(1000), { content: [{ type: "text" as const, text: "{}" }] })
+          : works[key]
           ? { content: [{ type: "text" as const, text: JSON.stringify(works[key]) }] }
           : { isError: true, content: [{ type: "text" as const, text: `No work has the key "${key}".` }] },
       );
@@ -239,8 +251,10 @@ describe("former citekeys", () => {
     await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
     try {
       const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const resolve = holdingsSameWork({ HOLDINGS_BASE: base });
+      const resolve = holdingsSameWork({ HOLDINGS_BASE: base }, 300);
+      // The slow key first: each call has its own timeout, so the calls after it still go through.
       const r = await resolve([
+        ["slow2010x", "collet2014zero"],
         ["collet2018zero", "collet2014zero"],
         ["smith2001x", "collet2014zero"],
         ["shared", "collet2014zero"],
@@ -248,6 +262,9 @@ describe("former citekeys", () => {
       ]);
       expect([...r.same]).toEqual([pairKey("collet2018zero", "collet2014zero")]);
       expect(r.unavailable).toBeUndefined();
+      // An unknown or ambiguous key is a plain non-match; only the call that failed is reported.
+      expect([...(r.failed?.keys() ?? [])]).toEqual([pairKey("slow2010x", "collet2014zero")]);
+      expect(r.failed?.get(pairKey("slow2010x", "collet2014zero"))).toMatch(/get_work for slow2010x failed at holdings-mcp \(.*time/i);
     } finally {
       await new Promise<void>((r) => server.close(() => r()));
     }
