@@ -50,7 +50,8 @@ export function holdingsSameWork(env: NodeJS.ProcessEnv = process.env, timeoutMs
 
     const client = new Client({ name: "iasp-mcp-citekeys", version: "0.1.0" });
     try {
-      // A timeout per request, not one signal for the whole session (which would cut off calls made after it expires).
+      // The timeout goes on each request: the SDK replaces `requestInit.signal` with its own abort controller, so a
+      // signal passed there is ignored and calls would wait for the SDK's 60-second default.
       await client.connect(new StreamableHTTPClientTransport(new URL(`${base}/mcp`)), { timeout: timeoutMs });
     } catch (error) {
       await client.close().catch(() => {});
