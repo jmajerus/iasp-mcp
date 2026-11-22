@@ -220,6 +220,25 @@ describe("quote-mcp client timeouts", () => {
     }
   });
 
+  it("gives up on a quote-mcp that accepts the connection but never answers initialize", async () => {
+    // Reads each request and never replies, so the MCP handshake hangs.
+    const server = http.createServer((req) => void req.resume());
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    try {
+      const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const t0 = Date.now();
+      const lookup = await fetchQuotes([1], { QUOTE_BASE: base }, 200);
+      const elapsed = Date.now() - t0;
+      expect(lookup.quotes.size).toBe(0);
+      expect(lookup.unavailable).toMatch(/unreachable .*time/i);
+      expect(elapsed).toBeGreaterThanOrEqual(150);
+      expect(elapsed).toBeLessThan(2000);
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((r) => server.close(() => r()));
+    }
+  });
+
   it("still gives up on a call slower than the timeout", async () => {
     const server = http.createServer(async (req, res) => {
       const mcp = new McpServer({ name: "quote-stuck-stub", version: "0.0.0" });
