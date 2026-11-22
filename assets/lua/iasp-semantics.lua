@@ -2183,7 +2183,26 @@ local function bind_quote_markers_in_blocks(blocks)
   end
 
   local out = {}
-  local pending_quote = nil
+  -- Markers waiting for the block they mark; markers on consecutive lines all mark the same block.
+  -- The next block consumes them, so a marker never reaches past the block right after it.
+  local pending_quotes = {}
+
+  local function quote_wrapper(quote)
+    local wrapper_attr = pandoc.Attr("", { "iasp-quote" }, {})
+    apply_external_concept_attributes(wrapper_attr.attributes, quote.concepts, quote)
+    if FORMAT and FORMAT:match("html") and not FORMAT:match("epub") then
+      wrapper_attr.attributes["vocab"] = SKOS_VOCAB_URI
+    end
+    return wrapper_attr
+  end
+
+  -- One wrapper per marker, the first marker outermost; `upto` is the last marker to wrap with.
+  local function wrap_quotes(block, upto)
+    for i = upto, 1, -1 do
+      block = pandoc.Div({ block }, quote_wrapper(pending_quotes[i]))
+    end
+    return block
+  end
 
   for _, block in ipairs(blocks) do
     if block.t == "Div" and block.content then
@@ -2192,23 +2211,21 @@ local function bind_quote_markers_in_blocks(blocks)
 
     local marker = parse_quote_marker_raw(block)
     if marker then
-      pending_quote = marker
+      table.insert(pending_quotes, marker)
       table.insert(out, block)
-    elseif pending_quote and (block.t == "BlockQuote" or block.t == "Div" or block.t == "Para") then
-      if block.t == "Div" then
-        block.attributes = block.attributes or {}
-        apply_external_concept_attributes(block.attributes, pending_quote.concepts, pending_quote)
-        table.insert(out, block)
-      else
-        local wrapper_attr = pandoc.Attr("", { "iasp-quote" }, {})
-        apply_external_concept_attributes(wrapper_attr.attributes, pending_quote.concepts, pending_quote)
-        if FORMAT and FORMAT:match("html") and not FORMAT:match("epub") then
-          wrapper_attr.attributes["vocab"] = SKOS_VOCAB_URI
-        end
-        table.insert(out, pandoc.Div({ block }, wrapper_attr))
-      end
-      pending_quote = nil
+    elseif #pending_quotes > 0 and (block.t == "BlockQuote" or block.t == "Para") then
+      table.insert(out, wrap_quotes(block, #pending_quotes))
+      pending_quotes = {}
+    elseif #pending_quotes > 0 and block.t == "Div" then
+      -- The marker nearest the div binds to it; any earlier ones wrap it.
+      local nearest = pending_quotes[#pending_quotes]
+      block.attributes = block.attributes or {}
+      apply_external_concept_attributes(block.attributes, nearest.concepts, nearest)
+      table.insert(out, wrap_quotes(block, #pending_quotes - 1))
+      pending_quotes = {}
     else
+      -- A heading, list, table, or other block is not a quoted passage, so the markers lapse.
+      pending_quotes = {}
       table.insert(out, block)
     end
   end

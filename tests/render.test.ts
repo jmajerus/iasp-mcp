@@ -1,7 +1,8 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { renderGhostMarkdown } from "../src/ghost.js";
 import { detectToolchain, renderDocument, resolveOutputDir } from "../src/render.js";
 
 describe("end-to-end rendering pipeline (Ghost, HTML, PDF, EPUB)", () => {
@@ -149,6 +150,72 @@ describe("render output directory", () => {
       if (previous === undefined) delete process.env.IASP_RENDER_DIR;
       else process.env.IASP_RENDER_DIR = previous;
       rmSync(base, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("render output names", () => {
+  it("never overwrites the source when the output is written beside it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "iasp-collide-"));
+    try {
+      const source = join(dir, "review.md");
+      const text = "# Review\n\nBody.\n";
+      writeFileSync(source, text, "utf8");
+      const build = await renderDocument({ source, formats: ["md", "ghost"], outputDir: dir });
+      expect(readFileSync(source, "utf8")).toBe(text);
+      const md = build.artifacts.find((a) => a.format === "md")!;
+      expect(md.output_path).toBe(join(dir, "review-rendered.md"));
+      expect(md.warnings[0]).toMatch(/would have overwritten the source review\.md/);
+      expect(build.artifacts.find((a) => a.format === "ghost")!.output_path).toBe(join(dir, "review-ghost.md"));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("quote markers in the Ghost exporter", () => {
+  const ghost = (md: string) => renderGhostMarkdown(md, { mode: "ghost" });
+
+  it("binds a marker only to the block right after it", () => {
+    const out = ghost(
+      [
+        "<!-- quote 884 -->",
+        'A run-in paragraph that quotes "the marked words" [@collet2018zero, p. 241].',
+        "",
+        "::: {.note .scope}",
+        "What was read in full.",
+        ":::",
+        "",
+        "<!-- quote 7 -->",
+        "",
+        "## A heading",
+        "",
+        "A paragraph after the heading.",
+      ].join("\n"),
+    );
+    expect(out.match(/data-quote-id=/g)).toHaveLength(1);
+    expect(out).toMatch(/<div class="iasp-quote"[^>]*data-quote-id="884"[^>]*>\n\nA run-in paragraph/);
+    const scope = out.split("\n").find((l) => l.includes('class="note scope'))!;
+    expect(scope).not.toContain("data-quote-id");
+  });
+
+  it("wraps one block once per stacked marker, the first outermost", () => {
+    const out = ghost(["<!-- quote 891 -->", "<!-- quote 892 -->", "> Two saved quotes in one block.", "", "Next paragraph."].join("\n"));
+    expect(out).toMatch(/data-quote-id="891"[^>]*>\n\n<div [^>]*data-quote-id="892"[^>]*>\n\n> Two saved quotes/);
+    expect(out).toMatch(/<\/div>\n\n<\/div>\n\nNext paragraph\./);
+  });
+
+  it("does the same in the HTML filter", async () => {
+    if (!detectToolchain().pandoc.available) return;
+    const dir = mkdtempSync(join(tmpdir(), "iasp-markers-"));
+    try {
+      const md = ["Intro.", "", "<!-- quote 891 -->", "<!-- quote 892 -->", "A paragraph with two quotes.", "", "<!-- quote 7 -->", "", "## Heading", "", "After the heading."].join("\n");
+      const build = await renderDocument({ markdown: md, formats: ["html"], outputDir: dir, returnContent: true });
+      const html = build.artifacts[0].content!;
+      expect(html).toMatch(/data-quote-id="891"[^>]*>\s*<div class="iasp-quote" data-quote-id="892"[^>]*>\s*<p>A paragraph with two quotes/);
+      expect(html).not.toContain('data-quote-id="7"');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
