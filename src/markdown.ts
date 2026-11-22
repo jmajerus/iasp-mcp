@@ -56,6 +56,7 @@ export interface ValidationIssue {
     | "quote-text-excerpt"
     | "quote-text-unchecked"
     | "quote-citekey-differs"
+    | "quote-citekey-former"
     | "quote-citation-missing"
     | "quote-locator-differs"
     | "quote-marker-orphan"

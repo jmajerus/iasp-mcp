@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { type CitationItem, citationItems, findCitations } from "./citeproc.js";
+import { type KeyPair, type SameWorkResolver, holdingsSameWork, pairKey } from "./citekey-aliases.js";
 import { type DB, PROJECT_ROOT } from "./db.js";
 import { extractFrontmatter } from "./ghost.js";
 import { type ValidationIssue, validateMarkdown } from "./markdown.js";
@@ -55,7 +56,8 @@ export interface QuoteCheck {
   pieces?: number;
   saved_at_difference?: string;
   draft_at_difference?: string;
-  citekey: "matches" | "differs" | "missing" | "unchecked";
+  /** `former`: the cited key is one the same work had before (holdings-mcp says both keys name it). */
+  citekey: "matches" | "former" | "differs" | "missing" | "unchecked";
   locator: "matches" | "differs" | "absent" | "unchecked";
   cited?: CitationItem;
   saved?: { citekey?: string; locator?: string };
@@ -368,7 +370,8 @@ function compareText(passage: QuotePassage, saved: string): TextResult {
   };
 }
 
-function checkPassage(passage: QuotePassage, lookup: QuoteLookup): QuoteCheck {
+/** `formerKeys`: `pairKey(cited, saved)` pairs holdings-mcp says name one work. */
+function checkPassage(passage: QuotePassage, lookup: QuoteLookup, formerKeys: Set<string> = new Set()): QuoteCheck {
   const base = { id: passage.id, line: passage.line, kind: passage.kind };
   const remote: FetchedQuote | undefined = lookup.quotes.get(passage.id);
   const saved = remote ? { ...(remote.citekey ? { citekey: remote.citekey } : {}), ...(remote.locatorText ? { locator: remote.locatorText } : {}) } : undefined;
@@ -408,13 +411,18 @@ function checkPassage(passage: QuotePassage, lookup: QuoteLookup): QuoteCheck {
     cited = passage.citations[0];
   } else {
     // A paragraph can cite the same work at several places (two quotes from one book): prefer the citation at the saved place.
-    const sameWork = passage.citations.filter((c) => c.key === remote.citekey);
+    const savedKey = remote.citekey;
+    let sameWork = passage.citations.filter((c) => c.key === savedKey);
+    citekey = "matches";
+    if (!sameWork.length) {
+      sameWork = passage.citations.filter((c) => formerKeys.has(pairKey(c.key, savedKey)));
+      citekey = sameWork.length ? "former" : "differs";
+    }
     const savedLocator = remote.locatorText;
     cited = (savedLocator ? sameWork.find((c) => c.locator && locatorsAgree(c.locator, savedLocator)) : undefined) ?? sameWork[0];
-    citekey = cited ? "matches" : "differs";
     cited ??= passage.citations[0];
   }
-  if (cited && citekey === "matches") {
+  if (cited && (citekey === "matches" || citekey === "former")) {
     if (!cited.locator) locator = "absent";
     else if (!remote.locatorText) locator = "unchecked";
     else locator = locatorsAgree(cited.locator, remote.locatorText) ? "matches" : "differs";
@@ -423,7 +431,7 @@ function checkPassage(passage: QuotePassage, lookup: QuoteLookup): QuoteCheck {
   return { ...base, ...text, citekey, locator, ...(cited ? { cited } : {}), ...(saved ? { saved } : {}) };
 }
 
-function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavailable?: string): ValidationIssue[] {
+function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavailable?: string, holdingsUnavailable?: string): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (unavailable && checks.some((c) => c.text === "unchecked" && c.reason === unavailable)) {
     const n = checks.filter((c) => c.reason === unavailable).length;
@@ -477,12 +485,20 @@ function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavail
         message: `Quote ${c.id} (line ${c.line}) not checked: ${c.reason}.`,
       });
     }
-    if (c.citekey === "differs") {
+    if (c.citekey === "former") {
+      issues.push({
+        severity: "warning",
+        code: "quote-citekey-former",
+        line: c.line,
+        message: `Quote ${c.id} (line ${c.line}) is cited as @${c.cited?.key}, a former key of the same work; its key is now @${c.saved?.citekey}.`,
+        suggestion: `Cite it as ${c.cited?.locator ? `[@${c.saved?.citekey}, ${c.cited.locator}]` : `[@${c.saved?.citekey}]`}.`,
+      });
+    } else if (c.citekey === "differs") {
       issues.push({
         severity: "error",
         code: "quote-citekey-differs",
         line: c.line,
-        message: `Quote ${c.id} (line ${c.line}) is cited as @${c.cited?.key}, but quote-mcp has it from @${c.saved?.citekey}.`,
+        message: `Quote ${c.id} (line ${c.line}) is cited as @${c.cited?.key}, but quote-mcp has it from @${c.saved?.citekey}${holdingsUnavailable ? ` (not checked as a former key of the same work: ${holdingsUnavailable})` : ""}.`,
         suggestion: `Cite it as ${c.saved?.locator ? `[@${c.saved?.citekey}, ${c.saved.locator}]` : `[@${c.saved?.citekey}]`}.`,
       });
     } else if (c.citekey === "missing") {
@@ -516,21 +532,40 @@ function issuesFor(checks: QuoteCheck[], unmarked: UnmarkedBlockQuote[], unavail
   return issues;
 }
 
-/** Check every marked passage of a document against quote-mcp; `lookup` may be passed to reuse a fetch. */
+/**
+ * Check every marked passage of a document against quote-mcp; `lookup` may be passed to reuse a fetch.
+ * A cited key that differs from the saved one is looked up in holdings-mcp (`sameWork`, by default
+ * get_work), and a former key of the same work is a warning rather than an error.
+ */
 export async function checkQuotes(
   markdown: string,
-  options: { env?: NodeJS.ProcessEnv; lookup?: QuoteLookup } = {},
+  options: { env?: NodeJS.ProcessEnv; lookup?: QuoteLookup; sameWork?: SameWorkResolver } = {},
 ): Promise<QuoteCheckReport & { lookup: QuoteLookup }> {
   const { passages, unmarked } = scanQuotePassages(markdown);
   const ids = [...new Set(passages.filter((p) => !p.legacy && p.kind !== "none").map((p) => p.id))];
   const lookup = options.lookup ?? (await fetchQuotes(ids, options.env));
-  const checks = passages.map((p) => checkPassage(p, lookup));
+  let checks = passages.map((p) => checkPassage(p, lookup));
+
+  // Each differing cited key, paired with the saved key, asked once.
+  const pairs = new Map<string, KeyPair>();
+  checks.forEach((c, i) => {
+    const saved = c.citekey === "differs" ? c.saved?.citekey : undefined;
+    if (!saved) return;
+    for (const cit of passages[i].citations) pairs.set(pairKey(cit.key, saved), [cit.key, saved]);
+  });
+  let holdingsUnavailable: string | undefined;
+  if (pairs.size) {
+    const resolved = await (options.sameWork ?? holdingsSameWork(options.env))([...pairs.values()]);
+    holdingsUnavailable = resolved.unavailable;
+    if (resolved.same.size) checks = passages.map((p) => checkPassage(p, lookup, resolved.same));
+  }
+
   const unavailable = ids.length ? lookup.unavailable : undefined;
   return {
     checks,
     unmarked_block_quotes: unmarked,
     ...(unavailable ? { unavailable } : {}),
-    issues: issuesFor(checks, unmarked, unavailable),
+    issues: issuesFor(checks, unmarked, unavailable, holdingsUnavailable),
     lookup,
   };
 }

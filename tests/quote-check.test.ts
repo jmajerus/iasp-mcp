@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { openDb } from "../src/db.js";
 import { type FetchedQuote, type QuoteLookup, fetchQuotes } from "../src/provenance.js";
+import { type SameWorkResolver, holdingsSameWork, pairKey } from "../src/citekey-aliases.js";
 import { canonicalWords, checkQuotes, excerptOf, locatorsAgree, quoteWords, scanQuotePassages, validateMarkdownWithQuotes } from "../src/quote-check.js";
 
 const HANH =
@@ -190,6 +191,66 @@ describe("quote text checks", () => {
 
     const legacy = await checkQuotes(`<!-- corpus:quote 12 -->\n> ${HANH}`, { lookup: lookupOf() });
     expect(legacy.checks[0].reason).toMatch(/corpus-mcp id/);
+  });
+});
+
+describe("former citekeys", () => {
+  // Better BibTeX renamed the key when the year was corrected; holdings-mcp knows both name one work.
+  const collet: FetchedQuote = { id: 884, citekey: "collet2014zero", locatorText: "p. 241", concepts: [], text: "found that balance", kind: "quote" };
+  const sameAs = (...pairs: [string, string][]): SameWorkResolver => async () => ({ same: new Set(pairs.map(([a, b]) => pairKey(a, b))) });
+  const md = `<!-- quote 884 -->\nHe "found that balance" [@collet2018zero, p. 241].`;
+
+  it("reports a former key of the same work as a warning that names the current key", async () => {
+    const r = await checkQuotes(md, { lookup: lookupOf(collet), sameWork: sameAs(["collet2018zero", "collet2014zero"]) });
+    expect(r.checks[0]).toMatchObject({ citekey: "former", locator: "matches", cited: { key: "collet2018zero", locator: "p. 241" } });
+    expect(r.issues.map((i) => [i.severity, i.code])).toEqual([["warning", "quote-citekey-former"]]);
+    expect(r.issues[0].suggestion).toBe("Cite it as [@collet2014zero, p. 241].");
+  });
+
+  it("keeps the error for another work's key, and says when holdings-mcp could not be asked", async () => {
+    const other = await checkQuotes(md, { lookup: lookupOf(collet), sameWork: sameAs() });
+    expect(other.checks[0].citekey).toBe("differs");
+    expect(other.issues[0]).toMatchObject({ severity: "error", code: "quote-citekey-differs" });
+
+    const off = await checkQuotes(md, { lookup: lookupOf(collet) }); // HOLDINGS_BASE=off in tests
+    expect(off.issues[0].severity).toBe("error");
+    expect(off.issues[0].message).toContain("not checked as a former key of the same work: holdings lookup is off");
+  });
+
+  it("asks holdings-mcp's get_work which work each key names", async () => {
+    const works: Record<string, unknown> = {
+      collet2018zero: { key: "zotero:users/1/W7SF3AIQ", citekey: "collet2014zero" },
+      collet2014zero: { key: "zotero:users/1/W7SF3AIQ", citekey: "collet2014zero" },
+      smith2001x: { key: "zotero:users/1/OTHER123", citekey: "smith2001x" },
+      shared: { note: "two works", works: [{ key: "a" }, { key: "b" }] },
+    };
+    const server = http.createServer(async (req, res) => {
+      const mcp = new McpServer({ name: "holdings-stub", version: "0.0.0" });
+      mcp.registerTool("get_work", { inputSchema: { key: z.string() } }, ({ key }) =>
+        works[key]
+          ? { content: [{ type: "text" as const, text: JSON.stringify(works[key]) }] }
+          : { isError: true, content: [{ type: "text" as const, text: `No work has the key "${key}".` }] },
+      );
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
+      res.on("close", () => void transport.close());
+      await mcp.connect(transport);
+      await transport.handleRequest(req, res);
+    });
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    try {
+      const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const resolve = holdingsSameWork({ HOLDINGS_BASE: base });
+      const r = await resolve([
+        ["collet2018zero", "collet2014zero"],
+        ["smith2001x", "collet2014zero"],
+        ["shared", "collet2014zero"],
+        ["nobody", "collet2014zero"],
+      ]);
+      expect([...r.same]).toEqual([pairKey("collet2018zero", "collet2014zero")]);
+      expect(r.unavailable).toBeUndefined();
+    } finally {
+      await new Promise<void>((r) => server.close(() => r()));
+    }
   });
 });
 
