@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -173,6 +173,24 @@ describe("render output names", () => {
   });
 });
 
+describe("render output names: same file, other name", () => {
+  it("treats another name for the source file as the source (as on a case-insensitive filesystem)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "iasp-collide-case-"));
+    try {
+      const source = join(dir, "Review.md");
+      const text = "# Review\n\nBody.\n";
+      writeFileSync(source, text, "utf8");
+      // The lower-cased default stem names the source's own file, as `review.md` would on macOS or Windows.
+      linkSync(source, join(dir, "review.md"));
+      const build = await renderDocument({ source, formats: ["md"], outputDir: dir });
+      expect(readFileSync(source, "utf8")).toBe(text);
+      expect(build.artifacts[0].output_path).toBe(join(dir, "review-rendered.md"));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe("quote markers in the Ghost exporter", () => {
   const ghost = (md: string) => renderGhostMarkdown(md, { mode: "ghost" });
 
@@ -197,6 +215,18 @@ describe("quote markers in the Ghost exporter", () => {
     expect(out).toMatch(/<div class="iasp-quote"[^>]*data-quote-id="884"[^>]*>\n\nA run-in paragraph/);
     const scope = out.split("\n").find((l) => l.includes('class="note scope'))!;
     expect(scope).not.toContain("data-quote-id");
+  });
+
+  it("ends a run-in where Ghost ends the paragraph, and wraps one that opens with inline HTML", () => {
+    for (const next of ["## A heading", "- a list item", "1. an ordered item", "> a block quote", "<div>raw block</div>", "---"]) {
+      const out = ghost(["<!-- quote 5 -->", "A run-in paragraph", "that wraps a line.", next].join("\n"));
+      expect(out, next).toMatch(/data-quote-id="5"[^>]*>\n\nA run-in paragraph\nthat wraps a line\.\n\n<\/div>\n/);
+    }
+    // A wrapped line that only looks like a list number stays in the paragraph, as CommonMark keeps it.
+    expect(ghost(["<!-- quote 5 -->", "It began in", "1999. Then it ended."].join("\n"))).toMatch(/1999\. Then it ended\.\n\n<\/div>/);
+
+    const inline = ghost(["<!-- quote 6 -->", "<em>Quoted words</em> open this paragraph [@k, p. 1]."].join("\n"));
+    expect(inline).toMatch(/data-quote-id="6"[^>]*>\n\n<em>Quoted words<\/em>/);
   });
 
   it("wraps one block once per stacked marker, the first outermost", () => {

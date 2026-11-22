@@ -232,10 +232,21 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   };
   let bibliographyReport: BibliographyReport | undefined;
   // An output named like the source (`output_dir` = the source's folder) gets `-rendered` so the source is never overwritten.
-  const sourcePath = tempInputPath ? null : resolve(inputPath);
+  // Compared as files, not path strings: on a case-insensitive filesystem the lower-cased stem of `Review.md` is the same file.
+  const sourceStat = tempInputPath ? null : statSync(inputPath);
+  const isSource = (path: string) => {
+    if (!sourceStat) return false;
+    if (path === resolve(inputPath)) return true;
+    try {
+      const st = statSync(path);
+      return st.dev === sourceStat.dev && st.ino === sourceStat.ino;
+    } catch {
+      return false; // nothing there yet
+    }
+  };
   const outputFor = (name: string): { outPath: string; renamed?: string } => {
     const outPath = resolve(outDir, name);
-    if (outPath !== sourcePath) return { outPath };
+    if (!isSource(outPath)) return { outPath };
     const ext = extname(name);
     const renamedPath = resolve(outDir, `${name.slice(0, name.length - ext.length)}-rendered${ext}`);
     return {

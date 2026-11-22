@@ -33,8 +33,21 @@ const WORKS_CITED_HEADING_RE = /^\s*##+\s+(Works Cited|References|Bibliography)\
 const FENCE_CLOSER_RE = /^:::\s*$/;
 const SINGLE_LINE_FENCE_RE = /^(:::\s*\{[^}]+\})\s+(.*?)\s*:::$/;
 const INLINE_CONTENT_FENCE_RE = /^(:::\s*\{[^}]+\})\s+(.+?)\s*$/;
-/** The first line of an ordinary paragraph: not a heading, list item, table, raw HTML, code fence, div fence, or footnote. */
-const RUN_IN_PARAGRAPH_RE = /^\s{0,3}(?!#{1,6}(?:\s|$)|[-*+]\s|\d+[.)]\s|\||<|`{3}|~{3}|:{3}|\[\^[^\]]+\]:)\S/;
+/** Tags that open a CommonMark HTML block (types 1 and 6); any other leading tag, such as `<em>`, is inline. */
+const HTML_BLOCK_TAGS =
+  "address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|pre|script|search|section|style|summary|table|tbody|td|textarea|tfoot|th|thead|title|tr|track|ul";
+const HTML_BLOCK_START = `<(?:!--|\\?|![A-Za-z]|!\\[CDATA\\[|\\/?(?:${HTML_BLOCK_TAGS})(?:\\s|\\/?>|$))`;
+/**
+ * A line that ends a paragraph in CommonMark (Ghost's dialect): heading, block quote, list item (an
+ * ordered one only from 1), code or div fence, thematic break, or HTML block.
+ */
+const PARAGRAPH_INTERRUPT_RE = new RegExp(
+  `^\\s{0,3}(?:#{1,6}(?:\\s|$)|>|[-*+]\\s+\\S|1[.)]\\s+\\S|\`{3}|~{3}|:{3}|(?:[-*_][ \\t]*){3,}$|${HTML_BLOCK_START})`,
+  "i",
+);
+/** The first line of an ordinary paragraph: none of the above, nor a table row, footnote, or other list item. */
+const RUN_IN_PARAGRAPH_RE = /^\s{0,3}(?![-*+]\s|\d+[.)]\s|\||\[\^[^\]]+\]:)\S/;
+const startsRunIn = (line: string) => RUN_IN_PARAGRAPH_RE.test(line) && !PARAGRAPH_INTERRUPT_RE.test(line);
 
 export interface TextLineNode {
   kind: "text";
@@ -668,9 +681,10 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
         let block: string[];
         if (node.text.trim().startsWith(">")) {
           block = collect(idx, (l) => l.trim().startsWith(">"));
-        } else if (RUN_IN_PARAGRAPH_RE.test(node.text)) {
+        } else if (startsRunIn(node.text)) {
           // A run-in quote: the paragraph that quotes the marked words.
-          block = collect(idx, (l) => l.trim() !== "" && !parseQuoteMarkerComment(l));
+          // It ends where Ghost ends it: at a blank line, a marker, or a line that starts another block.
+          block = [node.text, ...collect(idx + 1, (l) => l.trim() !== "" && !parseQuoteMarkerComment(l) && !PARAGRAPH_INTERRUPT_RE.test(l))];
         } else {
           // A heading, list, table, code, or raw HTML: not a quoted passage, so the markers lapse.
           parts.push(node.text);
