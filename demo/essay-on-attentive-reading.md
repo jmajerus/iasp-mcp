@@ -4,6 +4,10 @@ subtitle: "An End-to-End Demonstration of the Informative Authoring Semantics Pr
 author: "IASP Reference Demonstration"
 version: "0.1.0"
 lang: "en"
+ai-disclosure:
+  statement: "AI Disclosure: This demonstration essay was co-authored with an AI coding agent using the iasp-mcp server and the iasp concept scheme on terminology-mcp."
+  technical-note: "Technical Note: Rendered end to end via the Informative Authoring Semantics Profile (IASP) Pandoc and Ghost pipeline."
+  placement: inline
 ---
 
 ::: {.article}

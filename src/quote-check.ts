@@ -1,5 +1,6 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { checkAiDisclosure } from "./ai-credit.js";
 import { type CitationItem, citationItems, findCitations } from "./citeproc.js";
 import { type KeyPair, type SameWorkResolver, holdingsSameWork, pairKey } from "./citekey-aliases.js";
 import { type DB, PROJECT_ROOT } from "./db.js";
@@ -590,7 +591,10 @@ export async function validateMarkdownWithQuotes(
   const rootDir = input.rootDir ?? PROJECT_ROOT;
   const text = input.markdown ?? readFileSync(resolve(rootDir, input.path!), "utf8");
   const report = await checkQuotes(text, { env });
-  const issues = [...base.issues, ...report.issues].sort((a, b) => a.line - b.line);
+  const legacySidecar =
+    input.path !== undefined && existsSync(resolve(rootDir, input.path).replace(/\.(md|markdown)$/i, ".ai.json"));
+  const disclosureIssues = await checkAiDisclosure(text, { env, legacySidecar });
+  const issues = [...base.issues, ...report.issues, ...disclosureIssues].sort((a, b) => a.line - b.line);
   const errorCount = issues.filter((i) => i.severity === "error").length;
   return {
     ...base,

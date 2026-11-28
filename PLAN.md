@@ -121,7 +121,7 @@ Joined at query time with **`src/rendering-profile.ts`**, which maps each notati
 |---|---|---|
 | `render_document` | Render IASP Markdown | Render a Markdown file, raw Markdown string, or the built-in `"demo"` showcase to one or more formats: `md` (clean pure Markdown with blockquotes + glyph/label headers and zero raw HTML `<div>` tags), `html` (standalone with IASP CSS), `ghost` (expanded Markdown for Ghost CMS cards with inline-styled HTML `<div>` wrappers and AI disclosure injection), `pdf` (XeLaTeX with `pdf-header.tex` and `box-*.tex`, `screen` or `print` mode, plus optional `qpdf` linearization), `epub` (with `iasp-semantics.lua`, shared/EPUB CSS, and optional `epubcheck`), `docx`, or `rtf`. Supports `stage` (`final` or `draft`), `bibliography`, and `csl`. |
 | `wrap_by_directory` | Wrap files by directory | Inspect or apply directory-based IASP wrapper fences (`chapters/` → `::: {.chapter}`, `sidebars/` → `::: {.aside .sidebar-block}`, `appendices/` → `::: {.appendix}`, etc., from `tag_by_dir.py`), with dry-run preview by default (`apply: false`). |
-| `ai_disclosure` | Manage AI disclosure sidecar | Read or update a per-article `.ai.json` sidecar (`action: "get" \| "update"`, qualitative `ai_disclosure`, `technical_note`, `disclosure_variant`, plus legacy turn fields for backward compatibility) and preview the rendered disclosure block. |
+| `ai_disclosure` | Manage an article's AI disclosure | Read or update front-matter `ai-disclosure` (`action: "get" \| "update" \| "migrate"`, `placement`, `statement`, `technical_note`) and preview the rendered block. The credit line comes from provenance-mcp (`POST /api/credit`) from front-matter `provenance`; the `.ai.json` sidecar is deprecated and read-only. |
 
 ## End-to-end demonstration (`demo/`)
 
@@ -139,8 +139,8 @@ repository includes `demo/`:
     (`demo/fragments/lexical-precision-sidebar.md`)
   - Stage visibility blocks (`.draft` vs `.final`)
   - `{{meta:version}}` placeholder expansion and footnotes
-- `demo/essay-on-attentive-reading.ai.json`: Sample qualitative AI disclosure
-  sidecar rendered automatically by Ghost and article exports.
+- Front-matter `ai-disclosure` in both demo essays: a qualitative statement and technical note,
+  printed as a `note.ai` box in every format.
 - Interactive web preview at `GET /` (`http://127.0.0.1:8000/`):
   - Browse the 63 IASP concepts synced from `terminology-mcp`, grouped by Axis A
     (in `delivery-order`) and Axis B (by modifier group), plus the 22

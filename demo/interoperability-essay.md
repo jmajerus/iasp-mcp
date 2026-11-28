@@ -7,6 +7,10 @@ lang: "en"
 bibliography: "references.bib"
 link-citations: true
 corpus-project: "chamber-and-system"
+ai-disclosure:
+  statement: "AI Disclosure: This interoperability demonstration was drafted in a single session across six MCP servers (terminology-mcp, holdings-mcp, corpus-mcp, quote-mcp, zotero-mcp, and iasp-mcp), using only verified corpus quotations."
+  technical-note: "Technical Note: Rendered via the Informative Authoring Semantics Profile (IASP) Pandoc (--citeproc) and Ghost pipeline."
+  placement: inline
 ---
 
 ::: {.article}

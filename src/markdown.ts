@@ -12,6 +12,8 @@ import {
   parseMarkdownFences,
   wrapGhostBlock,
 } from "./ghost.js";
+import { Document as YamlDocument, isMap as isYamlMap } from "yaml";
+import { type AiPlacement, frontMatterBlock, frontMatterDocument, readFrontMatter, resolveAiDisclosure } from "./ai-credit.js";
 import { ToolError, findTermRow, parseNotations } from "./queries.js";
 import { parseQuoteMarkerComment, splitConceptList } from "./provenance.js";
 import {
@@ -60,7 +62,14 @@ export interface ValidationIssue {
     | "quote-citation-missing"
     | "quote-locator-differs"
     | "quote-marker-orphan"
-    | "unmarked-block-quote";
+    | "unmarked-block-quote"
+    | "front-matter-invalid"
+    | "ai-disclosure-invalid"
+    | "ai-disclosure-legacy"
+    | "provenance-invalid"
+    | "provenance-error"
+    | "provenance-warning"
+    | "provenance-unchecked";
   line: number;
   message: string;
   suggestion?: string;
@@ -524,102 +533,126 @@ export function wrapByDirectory(options: { path: string; apply?: boolean; rootDi
 
 export interface AiDisclosureToolArgs {
   article: string;
-  action?: "get" | "update";
-  disclosure_variant?: string;
+  /** "get" (default), "update" (write front-matter `ai-disclosure`), or "migrate" (copy a legacy .ai.json into it). */
+  action?: "get" | "update" | "migrate";
+  placement?: AiPlacement;
+  statement?: string;
+  /** Deprecated alias of `statement`. */
   ai_disclosure?: string;
   technical_note?: string;
+  /** Set placement `inline` and a default technical note when they are unset. */
   init_defaults?: boolean;
-  set_turns?: number;
-  inc_turns?: number;
-  set_fuzzy_min?: number;
-  set_fuzzy_max?: number;
-  clear_fuzzy?: boolean;
-  set_bucket_override?: string;
-  clear_bucket_override?: boolean;
   rootDir?: string;
+  env?: NodeJS.ProcessEnv;
 }
 
-export function manageAiDisclosure(args: AiDisclosureToolArgs) {
-  const rootDir = args.rootDir ?? PROJECT_ROOT;
-  let articlePath = resolve(rootDir, args.article);
-  if (!existsSync(articlePath) && !args.article.endsWith(".md")) {
-    const candidate = resolve(rootDir, `${args.article}.md`);
-    const demoCandidate = resolve(rootDir, "demo", `${args.article}.md`);
+const DEFAULT_TECHNICAL_NOTE = "Published via the Informative Authoring Semantics Profile (IASP) build pipeline.";
+
+function resolveArticlePath(rootDir: string, article: string): string {
+  let articlePath = resolve(rootDir, article);
+  if (!existsSync(articlePath) && !article.endsWith(".md")) {
+    const candidate = resolve(rootDir, `${article}.md`);
+    const demoCandidate = resolve(rootDir, "demo", `${article}.md`);
     if (existsSync(candidate)) articlePath = candidate;
     else if (existsSync(demoCandidate)) articlePath = demoCandidate;
   }
-  if (!existsSync(articlePath)) {
-    throw new ToolError(`Article not found: ${args.article}`);
-  }
+  if (!existsSync(articlePath)) throw new ToolError(`Article not found: ${article}`);
+  return articlePath;
+}
 
+/** Set keys of front-matter `ai-disclosure` (undefined leaves a key alone, null removes it), keeping comments and layout. */
+export function setAiDisclosureFrontMatter(markdown: string, changes: Record<string, string | null | undefined>): string {
+  const block = frontMatterBlock(markdown);
+  const lines = markdown.split(/\r?\n/);
+  const eol = markdown.includes("\r\n") ? "\r\n" : "\n";
+  const doc = frontMatterDocument(markdown) ?? new YamlDocument({});
+  if (doc.errors.length) throw new ToolError(`The front matter is not valid YAML, so it was not changed: ${doc.errors[0].message.split("\n")[0]}`);
+  if (doc.contents === null) doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
+  const current = doc.get("ai-disclosure");
+  if (typeof current === "string") doc.set("ai-disclosure", doc.createNode({ statement: current }));
+  else if (current !== undefined && current !== null && !isYamlMap(current)) {
+    throw new ToolError("Front-matter `ai-disclosure` is neither a mapping nor a statement string, so it was not changed.");
+  }
+  for (const [key, value] of Object.entries(changes)) {
+    if (value === undefined) continue;
+    if (value === null) doc.deleteIn(["ai-disclosure", key]);
+    else doc.setIn(["ai-disclosure", key], value);
+  }
+  const yamlText = doc.toString({ lineWidth: 0 }).replace(/\n$/, "").split("\n").join(eol);
+  const body = block ? lines.slice(block.endLine).join(eol) : markdown;
+  return `---${eol}${yamlText}${eol}---${eol}${body}`;
+}
+
+export async function manageAiDisclosure(args: AiDisclosureToolArgs) {
+  const rootDir = args.rootDir ?? PROJECT_ROOT;
+  const articlePath = resolveArticlePath(rootDir, args.article);
   const sidecarPath = articlePath.replace(/\.(md|markdown)$/i, ".ai.json");
-  let payload: AiDisclosureMetadata = {};
+  let legacy: AiDisclosureMetadata | undefined;
   if (existsSync(sidecarPath)) {
     try {
-      payload = JSON.parse(readFileSync(sidecarPath, "utf8")) as AiDisclosureMetadata;
+      legacy = JSON.parse(readFileSync(sidecarPath, "utf8")) as AiDisclosureMetadata;
     } catch {
-      payload = {};
+      legacy = undefined;
     }
   }
 
-  if ((args.action ?? "get") === "update") {
+  const action = args.action ?? "get";
+  let markdown = readFileSync(articlePath, "utf8");
+  const notes: string[] = [];
+
+  if (action === "update" || action === "migrate") {
+    const fm = readFrontMatter(markdown);
+    const existing = fm.data["ai-disclosure"];
+    const has = (key: string) =>
+      typeof existing === "string" ? key === "statement" : Boolean(existing && typeof existing === "object" && key in existing);
+    const changes: Record<string, string | null | undefined> = {};
+
+    if (action === "migrate") {
+      if (!legacy) throw new ToolError(`There is no readable .ai.json sidecar to migrate for ${args.article}.`);
+      if (legacy.ai_disclosure?.trim() && !has("statement")) changes.statement = formatDisclosureLine(legacy.ai_disclosure.trim(), buildTurnTokens(legacy));
+      if (legacy.technical_note?.trim() && !has("technical-note")) changes["technical-note"] = formatDisclosureLine(legacy.technical_note.trim(), buildTurnTokens(legacy));
+      if (!has("placement")) changes.placement = "inline";
+      if (legacy.turns !== undefined || legacy.turns_fuzzy_min !== undefined) notes.push("Turn counts are not carried into front matter; they end with the sidecar.");
+      if (legacy.disclosure_variant && legacy.disclosure_variant !== "ai") notes.push(`The sidecar's box variant '${legacy.disclosure_variant}' is not carried over; front-matter disclosures use the 'ai' box.`);
+      notes.push("The .ai.json sidecar was left in place and is no longer printed once front matter has the disclosure; delete it when you are ready.");
+    }
+
+    const statement = args.statement ?? args.ai_disclosure;
+    if (statement !== undefined) changes.statement = statement.trim() ? statement : null;
+    if (args.technical_note !== undefined) changes["technical-note"] = args.technical_note.trim() ? args.technical_note : null;
+    if (args.placement !== undefined) changes.placement = args.placement;
     if (args.init_defaults) {
-      payload.disclosure_variant ??= "ai";
-      payload.ai_disclosure ??=
-        "AI Disclosure: This article was developed through iterative collaboration with an AI assistant.";
-      payload.technical_note ??=
-        "Technical Note: Published via the Informative Authoring Semantics Profile (IASP) build pipeline.";
-    }
-    if (args.disclosure_variant !== undefined) payload.disclosure_variant = args.disclosure_variant;
-    if (args.ai_disclosure !== undefined) payload.ai_disclosure = args.ai_disclosure;
-    if (args.technical_note !== undefined) payload.technical_note = args.technical_note;
-
-    let turns = typeof payload.turns === "number" ? payload.turns : 0;
-    if (args.set_turns !== undefined) turns = Math.max(0, Math.trunc(args.set_turns));
-    if (args.inc_turns !== undefined) turns = Math.max(0, turns + Math.trunc(args.inc_turns));
-    if (args.set_turns !== undefined || args.inc_turns !== undefined || payload.turns !== undefined) {
-      payload.turns = turns;
+      if (!has("placement") && changes.placement === undefined) changes.placement = "inline";
+      if (!has("technical-note") && changes["technical-note"] === undefined) changes["technical-note"] = DEFAULT_TECHNICAL_NOTE;
     }
 
-    if (args.set_fuzzy_min !== undefined) payload.turns_fuzzy_min = Math.max(0, Math.trunc(args.set_fuzzy_min));
-    if (args.set_fuzzy_max !== undefined) payload.turns_fuzzy_max = Math.max(0, Math.trunc(args.set_fuzzy_max));
-    if (args.clear_fuzzy) {
-      delete payload.turns_fuzzy_min;
-      delete payload.turns_fuzzy_max;
+    if (Object.values(changes).some((v) => v !== undefined)) {
+      markdown = setAiDisclosureFrontMatter(markdown, changes);
+      writeFileSync(articlePath, markdown, "utf8");
     }
-    if (
-      payload.turns_fuzzy_min !== undefined &&
-      payload.turns_fuzzy_max !== undefined &&
-      payload.turns_fuzzy_max < payload.turns_fuzzy_min
-    ) {
-      [payload.turns_fuzzy_min, payload.turns_fuzzy_max] = [payload.turns_fuzzy_max, payload.turns_fuzzy_min];
-    }
-
-    if (args.set_bucket_override !== undefined) {
-      const cleaned = args.set_bucket_override.trim();
-      if (cleaned) payload.turns_bucket_override = cleaned;
-      else delete payload.turns_bucket_override;
-    }
-    if (args.clear_bucket_override) delete payload.turns_bucket_override;
-
-    writeFileSync(sidecarPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
   }
 
-  const tokens = buildTurnTokens(payload);
-  const previewLines: string[] = [];
-  if (payload.ai_disclosure) previewLines.push(formatDisclosureLine(payload.ai_disclosure, tokens));
-  if (payload.technical_note) previewLines.push(formatDisclosureLine(payload.technical_note, tokens));
-  const variant = (payload.disclosure_variant ?? "ai").toLowerCase();
-  const style = NOTE_VARIANT_SPECS[variant]?.ghost ?? NOTE_VARIANT_SPECS.ai.ghost;
-  const previewHtml = previewLines.length
-    ? wrapGhostBlock(previewLines.join("\n\n"), style, false, ["note", variant]).trim()
+  const fm = readFrontMatter(markdown);
+  const resolved = await resolveAiDisclosure({ markdown, legacy, legacyFromSidecar: true, env: args.env });
+  const style = NOTE_VARIANT_SPECS[resolved.variant]?.ghost ?? NOTE_VARIANT_SPECS.ai.ghost;
+  const previewHtml = resolved.paragraphs.length
+    ? wrapGhostBlock(resolved.paragraphs.join("\n\n"), style, false, ["note", resolved.variant]).trim()
     : null;
 
   return {
     article: relative(rootDir, articlePath) || articlePath,
-    sidecar: relative(rootDir, sidecarPath) || sidecarPath,
-    exists: existsSync(sidecarPath),
-    metadata: payload,
+    action,
+    front_matter: {
+      "ai-disclosure": fm.data["ai-disclosure"] ?? null,
+      provenance: fm.data.provenance ?? null,
+    },
+    legacy_sidecar: legacy ? { path: relative(rootDir, sidecarPath) || sidecarPath, deprecated: true, metadata: legacy } : null,
+    placement: resolved.placement,
+    source: resolved.source,
+    printed: resolved.paragraphs,
     rendered_preview: previewHtml,
+    warnings: resolved.warnings,
+    ...(resolved.credit ? { credit: { credit_line: resolved.credit.creditLine, errors: resolved.credit.errors, warnings: resolved.credit.warnings } } : {}),
+    ...(notes.length ? { notes } : {}),
   };
 }

@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -14,7 +14,7 @@ describe("markdown inspection, validation, directory wrapping, and AI disclosure
     expect(inspected.blocks[0].classes).toEqual(["article"]);
     expect(inspected.includes).toEqual([
       {
-        line: 58,
+        line: 62,
         target: "demo/fragments/lexical-precision-sidebar.md",
         mode: "file",
         exists: true,
@@ -61,7 +61,7 @@ describe("markdown inspection, validation, directory wrapping, and AI disclosure
     expect(issue).toMatchObject({ severity: "warning", line: 2 });
   });
 
-  it("wraps files by directory and manages .ai.json disclosure sidecars", () => {
+  it("wraps files by directory and manages front-matter AI disclosures", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "iasp-mcp-test-"));
     try {
       const chaptersDir = join(tmp, "chapters");
@@ -87,16 +87,22 @@ describe("markdown inspection, validation, directory wrapping, and AI disclosure
       const artFile = join(articlesDir, "test-essay.md");
       writeFileSync(artFile, "# Test Essay\n", "utf8");
 
-      const updatedSidecar = manageAiDisclosure({
+      const updated = await manageAiDisclosure({
         article: "articles/test-essay.md",
         action: "update",
         init_defaults: true,
-        set_turns: 8,
+        statement: "Drafted with an AI assistant; edited by the author.",
         rootDir: tmp,
+        env: { PROVENANCE_BASE: "off" },
       });
-      expect(updatedSidecar.exists).toBe(true);
-      expect(updatedSidecar.metadata.turns).toBe(8);
-      expect(updatedSidecar.rendered_preview).toContain("AI DISCLOSURE");
+      expect(updated.placement).toBe("inline");
+      expect(updated.source).toBe("statement");
+      expect(updated.printed[0]).toBe("Drafted with an AI assistant; edited by the author.");
+      expect(updated.rendered_preview).toContain("AI DISCLOSURE");
+      const written = readFileSync(artFile, "utf8");
+      expect(written).toMatch(/^---\nai-disclosure:\n {2}statement: Drafted with an AI assistant; edited by the author.\n/);
+      expect(written).toContain("# Test Essay");
+      expect(existsSync(join(articlesDir, "test-essay.ai.json"))).toBe(false);
     } finally {
       rmSync(tmp, { recursive: true, force: true });
     }

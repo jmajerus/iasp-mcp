@@ -11,7 +11,7 @@
 | `validate_markdown` | Validate IASP Markdown | Check for unbalanced `:::` fences, level-1 headings inside sidebars, nested shorthand fences with attributes, missing `.include` files, unknown/retired classes, and quoted words and citations against `quote-mcp` |
 | `render_document` | Render IASP Markdown | Render a Markdown file, inline Markdown, `"demo"`, or `"interop"` to `md`, `ghost`, `html`, `pdf`, `pdf-print`, `epub`, `docx`, or `rtf`, with automatic SKOS & quote provenance binding |
 | `wrap_by_directory` | Wrap Markdown files by directory | Preview or apply directory-based IASP wrapper fences (`chapters/`, `sidebars/`, `appendices/`, `articles/`) |
-| `ai_disclosure` | Manage article AI disclosure sidecar | Read or update a per-article `<article>.ai.json` sidecar and preview its rendered disclosure block |
+| `ai_disclosure` | Manage an article's AI disclosure | Read or update front-matter `ai-disclosure` (placement, statement, technical-note), preview the block renders print, or `migrate` a legacy `.ai.json` sidecar into front matter |
 | `status` | IASP server status | Terminology sync cursor, term and concept-set counts, and local toolchain status (exposed as `iasp_status` when prefixed by the Cloudflare MCP Portal) |
 
 ## The typical flow
@@ -93,7 +93,7 @@ Takes `path` or inline `markdown` and checks seven authoring rules before Pandoc
 | `bibliography` | Path to a bibliography (`.bib`, CSL `.json`, or any format Pandoc reads) for `--citeproc`. Defaults to the frontmatter `bibliography`. Applies to every format: `md` and `ghost` resolve `[@key, loc]` citations in place and fill the `## References` (or `Bibliography` / `Works Cited`) section; a note-style `csl` turns citations into `[^iasp-cite-N]` footnotes. If citations are present but no bibliography is available, `md` and `ghost` leave them as written and return a warning. |
 | `bibtex_content` | Inline BibTeX entries for `--citeproc`. Optional: see [Bibliography from the library](#bibliography-from-the-library). |
 | `csl` | Optional `.csl` citation style path. |
-| `ai_disclosure`, `technical_note`, `disclosure_variant` | Inline AI disclosure metadata when rendering inline Markdown over remote MCP without a local `.ai.json` sidecar. |
+| `ai_disclosure`, `technical_note`, `disclosure_variant` | Deprecated: legacy disclosure text for inline Markdown, treated like a `.ai.json` sidecar. Prefer front-matter `ai-disclosure` and `provenance` (see [AI disclosure](#ai-disclosure)). |
 | `optimize_pdf` | Linearize generated PDFs with `qpdf --linearize` when available (`true` by default). |
 | `validate_epub` | Validate generated EPUBs with `epubcheck` (`false` by default; `true` in `npm run demo`). |
 | `return_content` | Include the rendered text in the tool response for `"md"`, `"ghost"`, and `"html"` (default `false`; fetch the artifact's `url` instead). |
@@ -104,6 +104,28 @@ The response includes:
 - `artifacts`: format, output path, byte size, warnings, linearization/epubcheck flags, and `url` / `public_url` (see [Renders by URL](#renders-by-url)).
 - `provenance`: the resolved `quotes` and external `concepts` manifest bound into the output, plus `checks`, `unmarked_block_quotes`, `unavailable`, and `issues` from the same quote check `validate_markdown` runs.
 - `bibliography`: where each cited key's entry came from, and what could not be found.
+- `ai_disclosure`: the `placement`, which `source` the printed line came from (`statement`, `legacy`, `credit`, or `none`), the `printed` paragraphs, `warnings`, and, when provenance-mcp was asked, its `credit` answer, including the `match_table` versions it matched against.
+
+#### AI disclosure
+
+Front-matter `provenance` records who contributed; front-matter `ai-disclosure` says what to print and where:
+
+```yaml
+provenance:
+  contributors:
+    - "Jane Author"
+    - { name: "Claude", model: "anthropic/claude-opus-5-5" }
+ai-disclosure:
+  placement: inline             # copyright | titlepage | inline | none (default)
+  statement: "..."              # optional; printed verbatim
+  technical-note: "..."         # optional; printed after the line, in the same block
+```
+
+What is printed, in order: `ai-disclosure.statement`; a legacy `.ai.json` sidecar's text (deprecated, read-only); the credit line provenance-mcp generates from `provenance` (`POST /api/credit` at `PROVENANCE_BASE`, with `mixedDefault: humanPrimary` and the document's `author` list); otherwise nothing. iasp-mcp never builds a credit line itself, so when provenance-mcp is off or unreachable there is none. A bare-string `ai-disclosure: "..."` is a statement with placement `none`.
+
+The block is a `note.ai` box in every format. `inline` and `copyright` put it before the first level-2+ Works Cited / References / Bibliography heading (or at the end of the body); `titlepage` puts it right after the leading `# Title`. Pandoc formats place it with `assets/lua/ai_disclosure.lua`. No machine-readable form (HTML meta, JSON-LD, EPUB OPF, PDF XMP) is written yet.
+
+The front matter is read with a YAML parser rather than Pandoc's metadata, because Pandoc parses metadata strings as Markdown and the names provenance-mcp matches must arrive as written. The name `provenance` in the `render_document` result is the quote and concept manifest, a separate thing.
 
 #### Bibliography from the library
 
