@@ -31,6 +31,7 @@ Settings come from `.env` in your local checkout (see [.env.example](../.env.exa
 | `TERMINOLOGY_BASE` | `http://terminology-mcp.localdomain:8000` | `terminology-mcp` endpoint used to follow the `iasp` changelog and resolve external concept URNs; `off` disables network calls and uses the bundled seed. |
 | `QUOTE_BASE` | `http://quote-mcp.localdomain:8000` | `quote-mcp` endpoint used by `render_document` and `validate_markdown` to enrich `<!-- quote <id> -->` markers with `citekey`, `workKey`, `locator`, and `human-work` concepts, and to check the quoted words and citations against the saved quote; `off` disables live lookup (each marked quote is then reported `unchecked`). |
 | `HOLDINGS_BASE` | `http://holdings-mcp.localdomain:8000` | `holdings-mcp` endpoint (`/api/bibliography`) asked for bibliography entries of cited keys the author did not supply, and (`get_work` over `/mcp`) whether a quote's cited key is a former key of the work quote-mcp has it from; `off` disables both. |
+| `PROVENANCE_BASE` | `http://provenance-mcp.localdomain:8000` | `provenance-mcp` endpoint (`POST /api/credit`) asked by `render_document`, `validate_markdown`, and `ai_disclosure` for the credit line and checks of front-matter `provenance`; `off` disables (no credit line is printed, and `provenance` is checked for shape only). |
 | `CORPUS_BASE` | `http://corpus-mcp.localdomain:8000` | `corpus-mcp` endpoint (`/api/csl`) asked for CSL entries of Calibre books not filed in Zotero yet; `off` disables. |
 | `IASP_URL` | the request's host (HTTP); none (stdio) | LAN base URL for render artifact `url`s (`<base>/renders/<path>`); `off` disables. |
 | `IASP_PUBLIC_URL` | the request's host, for requests through the tunnel | Public (tunnel) base URL for render artifact `public_url`s; readers need a Cloudflare Access login. `off` disables. |
@@ -60,7 +61,7 @@ The **Deploy IASP** button in VS Code's status bar (or `npm run deploy` from the
 |---|---|---|
 | Deploy this checkout | `npm run deploy` | Builds, runs `npm test`, uploads a release tarball, installs production dependencies, migrates the store (with pre-migration backup), syncs `iasp` terms, restarts `iasp-mcp.service`, verifies `/health`, and rolls back on failure. |
 | Deploy this checkout without tests | `npm run deploy -- --skip-tests` | Same as above, skipping the local test run. |
-| Push the server's settings | `npm run deploy -- --env` | Copies `TERMINOLOGY_BASE`, `QUOTE_BASE`, `HOLDINGS_BASE`, `CORPUS_BASE`, `IASP_URL`, `IASP_PUBLIC_URL`, `IASP_TERMS_SYNC`, `ACCESS_TEAM_DOMAIN`, and `IASP_PORT` (those set in `.env`) to `/etc/iasp-mcp/env` and restarts. |
+| Push the server's settings | `npm run deploy -- --env` | Copies `TERMINOLOGY_BASE`, `QUOTE_BASE`, `HOLDINGS_BASE`, `CORPUS_BASE`, `PROVENANCE_BASE`, `IASP_URL`, `IASP_PUBLIC_URL`, `IASP_TERMS_SYNC`, `ACCESS_TEAM_DOMAIN`, and `IASP_PORT` (those set in `.env`) to `/etc/iasp-mcp/env` and restarts. |
 | Provision LXC (one-time) | `npm run deploy -- --provision` | Installs Node 22, Pandoc, XeLaTeX (`texlive-xetex`, `texlive-latex-extra`, Pagella/DejaVu/Noto fonts), `qpdf`, `epubcheck`, creates the `iasp` system user, and sets up directories. |
 
 ## VS Code status bar

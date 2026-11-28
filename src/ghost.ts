@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { parseDocument as parseYamlDocument } from "yaml";
 import { PROJECT_ROOT } from "./db.js";
 import {
   defaultConceptRef,
@@ -157,16 +158,29 @@ export function normalizeFenceLines(lines: string[]): string[] {
   return result;
 }
 
+/**
+ * The front matter's top-level scalar values as strings (lists and mappings are left out; read those with
+ * ai-credit.ts readFrontMatter). Parsed as YAML; a block that isn't valid YAML falls back to `key: value` lines.
+ */
 export function extractFrontmatter(text: string): { frontmatter: Record<string, string>; bodyStartLine: number; bodyLines: string[] } {
   const lines = text.split(/\r?\n/);
   const frontmatter: Record<string, string> = {};
   if (lines[0]?.trim() === "---") {
     for (let i = 1; i < lines.length; i++) {
       if (lines[i].trim() === "---" || lines[i].trim() === "...") {
-        for (let j = 1; j < i; j++) {
-          const m = /^([\w-]+)\s*:\s*(.*)$/.exec(lines[j]);
-          if (m) {
-            frontmatter[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
+        const yamlLines = lines.slice(1, i);
+        const doc = parseYamlDocument(yamlLines.join("\n"));
+        const data = doc.errors.length ? undefined : doc.toJS();
+        if (data && typeof data === "object" && !Array.isArray(data)) {
+          for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+            if (typeof value === "string") frontmatter[key] = value.trim();
+            else if (typeof value === "number" || typeof value === "boolean") frontmatter[key] = String(value);
+            else if (value instanceof Date) frontmatter[key] = value.toISOString().slice(0, 10);
+          }
+        } else {
+          for (const line of yamlLines) {
+            const m = /^([\w-]+)\s*:\s*(.*)$/.exec(line);
+            if (m) frontmatter[m[1].trim()] = m[2].trim().replace(/^["']|["']$/g, "");
           }
         }
         return { frontmatter, bodyStartLine: i + 2, bodyLines: lines.slice(i + 1) };
@@ -539,36 +553,50 @@ export function injectAiDisclosures(
   mode: "ghost" | "md" = "ghost",
 ): string {
   if (!metadata || Object.keys(metadata).length === 0) return body;
+  const tokens = buildTurnTokens(metadata);
+  const paragraphs: string[] = [];
+  if (metadata.ai_disclosure?.trim()) paragraphs.push(formatDisclosureLine(metadata.ai_disclosure.trim(), tokens));
+  if (metadata.technical_note?.trim()) paragraphs.push(formatDisclosureLine(metadata.technical_note.trim(), tokens));
+  return injectDisclosureBlock(body, { paragraphs, variant: metadata.disclosure_variant ?? "ai", position: "end" }, mode);
+}
+
+/** A resolved AI disclosure block (see ai-credit.ts): its paragraphs, box variant, and where it goes. */
+export interface DisclosureBlock {
+  paragraphs: string[];
+  variant: string;
+  /** "top": after the leading `# Title` (or at the top); "end": before Works Cited / References / Bibliography, or at the end. */
+  position: "top" | "end" | null;
+}
+
+export function injectDisclosureBlock(body: string, block: DisclosureBlock, mode: "ghost" | "md" = "ghost"): string {
+  if (!block.position || !block.paragraphs.length) return body;
   if (body.includes("AI Disclosure:") || body.includes("Technical Note:")) return body;
 
-  const tokens = buildTurnTokens(metadata);
-  const lines: string[] = [];
-  if (metadata.ai_disclosure?.trim()) {
-    lines.push(formatDisclosureLine(metadata.ai_disclosure.trim(), tokens));
-  }
-  if (metadata.technical_note?.trim()) {
-    lines.push(formatDisclosureLine(metadata.technical_note.trim(), tokens));
-  }
-  if (!lines.length) return body;
-
-  const variantKey = (metadata.disclosure_variant ?? "ai").trim().toLowerCase();
+  const variantKey = block.variant.trim().toLowerCase() || "ai";
   const style = NOTE_VARIANT_SPECS[variantKey]?.ghost ?? NOTE_VARIANT_SPECS.ai.ghost;
-  const wrapped =
-    mode === "md"
-      ? wrapMarkdownBlock(lines.join("\n\n"), style)
-      : wrapGhostBlock(lines.join("\n\n"), style, false, ["note", variantKey]);
+  const text = block.paragraphs.join("\n\n");
+  const wrapped = mode === "md" ? wrapMarkdownBlock(text, style) : wrapGhostBlock(text, style, false, ["note", variantKey]);
 
   const bodyLines = body.split(/\r?\n/);
-  let insertAt = bodyLines.length;
-  for (let i = 0; i < bodyLines.length; i++) {
-    if (WORKS_CITED_HEADING_RE.test(bodyLines[i])) {
-      insertAt = i;
+  let insertAt = block.position === "top" ? 0 : bodyLines.length;
+  if (block.position === "top") {
+    for (let i = 0; i < bodyLines.length; i++) {
+      const t = bodyLines[i].trim();
+      if (!t || /^<!--.*-->$/.test(t)) continue;
+      if (/^#[ \t]+\S/.test(t)) insertAt = i + 1;
       break;
+    }
+  } else {
+    for (let i = 0; i < bodyLines.length; i++) {
+      if (WORKS_CITED_HEADING_RE.test(bodyLines[i])) {
+        insertAt = i;
+        break;
+      }
     }
   }
 
-  const block = ["", ...wrapped.trim().split(/\r?\n/), ""];
-  return [...bodyLines.slice(0, insertAt), ...block, ...bodyLines.slice(insertAt)].join("\n");
+  const lines = ["", ...wrapped.trim().split(/\r?\n/), ""];
+  return [...bodyLines.slice(0, insertAt), ...lines, ...bodyLines.slice(insertAt)].join("\n");
 }
 
 function detectNoteVariantKey(classes: string[]): string {
@@ -585,7 +613,10 @@ export interface GhostRenderOptions {
   stage?: "final" | "draft";
   mode?: "ghost" | "md";
   metadata?: Record<string, string>;
+  /** Legacy `.ai.json` metadata, printed as an end-of-article box (used only when `disclosure` is not given). */
   aiMetadata?: AiDisclosureMetadata;
+  /** The resolved AI disclosure block (ai-credit.ts resolveAiDisclosure); it replaces `aiMetadata`. */
+  disclosure?: DisclosureBlock;
   provenanceManifest?: ProvenanceManifest;
   /** Ghost mode only: keep the leading `# Title` H1 (default false, since Ghost's title field already shows it). */
   keepTitleH1?: boolean;
@@ -812,9 +843,11 @@ export function renderGhostMarkdown(markdown: string, options: GhostRenderOption
 
   const renderedNodes = renderNodes(nodes, baseDir);
   const renderedBody = mode === "ghost" && !options.keepTitleH1 ? stripLeadingTitleH1(renderedNodes) : renderedNodes;
-  const withDisclosures = options.aiMetadata
-    ? injectAiDisclosures(renderedBody, options.aiMetadata, mode)
-    : renderedBody;
+  const withDisclosures = options.disclosure
+    ? injectDisclosureBlock(renderedBody, options.disclosure, mode)
+    : options.aiMetadata
+      ? injectAiDisclosures(renderedBody, options.aiMetadata, mode)
+      : renderedBody;
   return mode === "md" ? `${withDisclosures.trim().replace(/\n{3,}/g, "\n\n")}\n` : withDisclosures;
 }
 

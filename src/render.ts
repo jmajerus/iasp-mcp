@@ -4,6 +4,7 @@ import { basename, dirname, extname, isAbsolute, relative, resolve, sep } from "
 import { PROJECT_ROOT } from "./db.js";
 import { type BibliographyReport, bibliographyFileKeys, bibtexKeys, fetchBibliography } from "./bibliography.js";
 import { citedKeys, resolveCitations } from "./citeproc.js";
+import { resolveAiDisclosure } from "./ai-credit.js";
 import { type AiDisclosureMetadata, extractFrontmatter, renderCleanMarkdown, renderGhostMarkdown } from "./ghost.js";
 import { buildProvenanceManifest, fetchQuotes, type ProvenanceManifest, scanMarkdownProvenanceSeeds } from "./provenance.js";
 import { checkQuotes } from "./quote-check.js";
@@ -14,6 +15,7 @@ export const ASSETS_DIR = resolve(PROJECT_ROOT, "assets");
 export const LUA_SEMANTICS_FILTER = resolve(ASSETS_DIR, "lua/iasp-semantics.lua");
 export const LUA_TITLE_FILTER = resolve(ASSETS_DIR, "lua/title_from_first_heading.lua");
 export const LUA_RUNNING_HEADERS_FILTER = resolve(ASSETS_DIR, "lua/running_headers.lua");
+export const LUA_AI_DISCLOSURE_FILTER = resolve(ASSETS_DIR, "lua/ai_disclosure.lua");
 export const CSS_SHARED = resolve(ASSETS_DIR, "styles/styles-shared.css");
 export const CSS_HTML = resolve(ASSETS_DIR, "styles/styles.css");
 export const CSS_EPUB = resolve(ASSETS_DIR, "styles/styles-epub.css");
@@ -155,8 +157,10 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   let tempBibPath: string | null = null;
   let tempFetchedBibPath: string | null = null;
   let tempProvenancePath: string | null = null;
+  let tempDisclosurePath: string | null = null;
   let rawMarkdown: string;
   let aiMetadata: AiDisclosureMetadata | undefined = options.aiMetadata;
+  let aiMetadataFromSidecar = false;
 
   if (options.markdown !== undefined) {
     rawMarkdown = options.markdown;
@@ -180,6 +184,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
     if (!aiMetadata && existsSync(sidecarPath)) {
       try {
         aiMetadata = JSON.parse(readFileSync(sidecarPath, "utf8")) as AiDisclosureMetadata;
+        aiMetadataFromSidecar = true;
       } catch {
         aiMetadata = undefined;
       }
@@ -215,6 +220,19 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
   if (Object.keys(provenanceManifest.quotes).length > 0 || Object.keys(provenanceManifest.concepts).length > 0) {
     tempProvenancePath = resolve(outDir, `.tmp-provenance-${process.pid}-${Date.now()}.json`);
     writeFileSync(tempProvenancePath, JSON.stringify(provenanceManifest), "utf8");
+  }
+
+  // What to print about AI involvement, and where (front-matter `ai-disclosure` / `provenance`, or the legacy sidecar).
+  const disclosure = await resolveAiDisclosure({
+    markdown: rawMarkdown,
+    legacy: aiMetadata,
+    legacyFromSidecar: aiMetadataFromSidecar,
+    env,
+  });
+  const disclosureBlock = { paragraphs: disclosure.paragraphs, variant: disclosure.variant, position: disclosure.position };
+  if (disclosure.position) {
+    tempDisclosurePath = resolve(outDir, `.tmp-ai-disclosure-${process.pid}-${Date.now()}.json`);
+    writeFileSync(tempDisclosurePath, JSON.stringify(disclosureBlock), "utf8");
   }
 
   const toolchain = detectToolchain();
@@ -322,7 +340,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
             rootDir,
             baseDir: dirname(inputPath),
             stage,
-            aiMetadata,
+            disclosure: disclosureBlock,
             provenanceManifest,
           }),
           citeOptions,
@@ -346,7 +364,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
             rootDir,
             baseDir: dirname(inputPath),
             stage,
-            aiMetadata,
+            disclosure: disclosureBlock,
             provenanceManifest,
             keepTitleH1: options.keepTitleH1,
           }),
@@ -383,6 +401,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
         inputPath,
         "-f",
         PANDOC_READER,
+        `--lua-filter=${LUA_AI_DISCLOSURE_FILTER}`,
         `--lua-filter=${LUA_SEMANTICS_FILTER}`,
         `--lua-filter=${LUA_TITLE_FILTER}`,
         `--lua-filter=${LUA_RUNNING_HEADERS_FILTER}`,
@@ -395,6 +414,9 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
       ];
       if (tempProvenancePath) {
         args.push("-M", `provenance-manifest=${tempProvenancePath}`);
+      }
+      if (tempDisclosurePath) {
+        args.push("-M", `iasp-ai-disclosure=${tempDisclosurePath}`);
       }
 
       if (bibliographyPaths.length) {
@@ -502,6 +524,7 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
     if (tempBibPath) rmSync(tempBibPath, { force: true });
     if (tempFetchedBibPath) rmSync(tempFetchedBibPath, { force: true });
     if (tempProvenancePath) rmSync(tempProvenancePath, { force: true });
+    if (tempDisclosurePath) rmSync(tempDisclosurePath, { force: true });
   }
 
   return {
@@ -510,6 +533,22 @@ export async function renderDocument(options: RenderDocumentOptions = {}) {
     stage,
     provenance: { ...provenanceManifest, ...quoteReport },
     ...(bibliographyReport ? { bibliography: bibliographyReport } : {}),
+    ai_disclosure: {
+      placement: disclosure.placement,
+      source: disclosure.source,
+      printed: disclosure.paragraphs,
+      warnings: disclosure.warnings,
+      ...(disclosure.credit
+        ? {
+            credit: {
+              credit_line: disclosure.credit.creditLine,
+              errors: disclosure.credit.errors,
+              warnings: disclosure.credit.warnings,
+              match_table: disclosure.credit.matchTable,
+            },
+          }
+        : {}),
+    },
     artifacts,
   };
 }

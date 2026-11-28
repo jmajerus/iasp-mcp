@@ -199,9 +199,9 @@ export function createServer(db: DB, options: CreateServerOptions = {}): McpServ
           .optional()
           .describe("Inline BibTeX entries for --citeproc. Optional: cited keys these lack are fetched from Zotero / the Calibre libraries; entries given here always win"),
         csl: z.string().optional().describe("Optional path to a .csl citation style file"),
-        ai_disclosure: z.string().optional().describe("Inline qualitative AI disclosure line to inject in md/ghost outputs"),
-        technical_note: z.string().optional().describe("Inline technical note line to inject in md/ghost outputs"),
-        disclosure_variant: z.string().optional().describe("Disclosure box style variant (default: 'ai' or 'disclosure')"),
+        ai_disclosure: z.string().optional().describe("Deprecated: legacy disclosure text for inline Markdown, printed like a .ai.json sidecar (front-matter ai-disclosure.statement wins). Prefer front-matter `ai-disclosure` and `provenance`"),
+        technical_note: z.string().optional().describe("Deprecated: legacy technical note for inline Markdown (front-matter ai-disclosure.technical-note wins)"),
+        disclosure_variant: z.string().optional().describe("Deprecated: box style for the legacy disclosure text (default 'ai')"),
         optimize_pdf: z.boolean().optional().describe("Linearize PDF with qpdf when available (default true)"),
         validate_epub: z.boolean().optional().describe("Run epubcheck on generated EPUB when available (default false)"),
         return_content: z
@@ -270,27 +270,33 @@ export function createServer(db: DB, options: CreateServerOptions = {}): McpServ
   server.registerTool(
     "ai_disclosure",
     {
-      title: "Manage article AI disclosure sidecar",
+      title: "Manage an article's AI disclosure",
       description:
-        "Read or update a per-article AI disclosure sidecar (<article>.ai.json) and preview the styled disclosure block injected during Ghost export. Prefer qualitative descriptions of collaboration over turn counts.",
+        "Read or update an article's front-matter `ai-disclosure` (placement: copyright | titlepage | inline | none; statement; technical-note) and preview the disclosure block renders print. What is printed, in order: ai-disclosure.statement; the deprecated .ai.json sidecar's text; the credit line provenance-mcp generates from front-matter `provenance` (contributors, collaboration, reviewedBy); otherwise nothing. 'migrate' copies a legacy .ai.json sidecar into front matter (turn counts are not carried over). The sidecar itself is read-only and no longer written.",
       inputSchema: {
         article: z.string().min(1).describe("Article Markdown path or slug (e.g. 'demo/essay-on-attentive-reading.md')"),
-        action: z.enum(["get", "update"]).optional().describe("'get' (default) or 'update'"),
-        disclosure_variant: z.string().optional().describe("Note variant style for the disclosure box (default: 'ai' or 'disclosure')"),
-        ai_disclosure: z.string().optional().describe("Qualitative AI collaboration disclosure text"),
-        technical_note: z.string().optional().describe("Technical pipeline note text"),
-        init_defaults: z.boolean().optional().describe("Initialize default disclosure fields if unset"),
-        set_turns: z.number().int().min(0).optional().describe("Legacy exact turn count"),
-        inc_turns: z.number().int().optional().describe("Legacy turn count increment"),
-        set_fuzzy_min: z.number().int().min(0).optional(),
-        set_fuzzy_max: z.number().int().min(0).optional(),
-        clear_fuzzy: z.boolean().optional(),
-        set_bucket_override: z.string().optional(),
-        clear_bucket_override: z.boolean().optional(),
+        action: z
+          .enum(["get", "update", "migrate"])
+          .optional()
+          .describe("'get' (default), 'update' (write front-matter ai-disclosure), or 'migrate' (copy the .ai.json sidecar into front matter)"),
+        placement: z
+          .enum(["copyright", "titlepage", "inline", "none"])
+          .optional()
+          .describe("Where the block prints. In a single article, 'inline' and 'copyright' go before Works Cited / References (or at the end), 'titlepage' after the title; 'none' prints nothing (the default)"),
+        statement: z
+          .string()
+          .optional()
+          .describe("Disclosure printed verbatim, instead of the credit line generated from `provenance`. An empty string removes it"),
+        ai_disclosure: z.string().optional().describe("Deprecated alias of 'statement'"),
+        technical_note: z
+          .string()
+          .optional()
+          .describe("Pipeline credit printed after the line, in the same block. An empty string removes it"),
+        init_defaults: z.boolean().optional().describe("Set placement 'inline' and a default technical note when unset"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
-    (args) => run(() => manageAiDisclosure(args)),
+    (args) => runAsync(() => manageAiDisclosure(args)),
   );
 
   server.registerTool(

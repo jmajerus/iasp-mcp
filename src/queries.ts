@@ -705,21 +705,36 @@ Reader-facing synthesis shown in final builds.
 - In \`draft\` builds (\`stage: "draft"\`), \`.draft\` elements render and \`.final\` elements are hidden.`,
     },
     "ai-disclosure": {
-      title: "Article AI Disclosure Sidecars (.ai.json)",
-      summary: "Storing qualitative AI collaboration and technical notes alongside articles.",
-      markdown: `# Article AI Disclosure Sidecars (\`<Article>.ai.json\`)
+      title: "AI Disclosure and Credit Lines",
+      summary: "Front-matter `provenance` (who contributed) and `ai-disclosure` (what to print, where); the credit line comes from provenance-mcp.",
+      markdown: `# AI Disclosure and Credit Lines
 
-Store AI disclosure metadata in a sidecar file beside any article Markdown source (\`articles/<Name>.ai.json\`):
+Record contributors once, in front matter, and choose what to print and where:
 
-\`\`\`json
-{
-  "disclosure_variant": "ai",
-  "ai_disclosure": "AI Disclosure: This article was developed through iterative collaboration with Claude.",
-  "technical_note": "Technical Note: Published via the Informative Authoring Semantics Profile (IASP) pipeline."
-}
+\`\`\`yaml
+provenance:                     # who contributed (provenance-mcp's provenance object)
+  contributors:
+    - "Jane Author"
+    - { name: "Claude", model: "anthropic/claude-opus-5-5" }
+  reviewedBy: "Sam Editor"      # optional
+ai-disclosure:
+  placement: inline             # copyright | titlepage | inline | none (default)
+  statement: "..."              # optional; printed verbatim instead of the credit line
+  technical-note: "Published via the IASP build pipeline."   # optional; printed after the line
 \`\`\`
 
-Prefer qualitative descriptions of collaboration over numeric turn counts. When exporting to Ghost Markdown (\`render_document\` with \`format: "ghost"\`), the sidecar is injected automatically ahead of \`## Works Cited\` (or at the end of the article) inside a styled disclosure box.`,
+What is printed, in order of precedence:
+
+1. \`ai-disclosure.statement\`;
+2. the deprecated \`<article>.ai.json\` sidecar's text (read-only during the transition);
+3. the credit line provenance-mcp generates from \`provenance\` (for example "By Claude (Opus 5.5), with editorial direction by Jane Author");
+4. otherwise nothing. When provenance-mcp is off or unreachable there is no generated line.
+
+\`ai-disclosure: "..."\` as a bare string is a statement with placement \`none\`.
+
+In a single article, \`inline\` and \`copyright\` place the \`note.ai\` box before the first level-2+ Works Cited / References / Bibliography heading (or at the end), and \`titlepage\` right after the leading \`# Title\`. Every format prints it: md, ghost, html, pdf, epub, docx.
+
+\`validate_markdown\` checks both blocks; \`provenance\` goes to provenance-mcp, whose errors and warnings are reported as warnings. The \`ai_disclosure\` tool edits front-matter \`ai-disclosure\`, and its \`migrate\` action moves a legacy sidecar into it (turn counts are not carried over).`,
     },
     ghost: {
       title: "Publishing Articles to Ghost CMS",
