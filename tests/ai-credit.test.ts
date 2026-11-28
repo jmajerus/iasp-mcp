@@ -202,6 +202,14 @@ describe("placing the block", () => {
     expect(top.indexOf("AI DISCLOSURE")).toBeLessThan(top.indexOf("Body."));
   });
 
+  it("still places the block when the body mentions 'AI Disclosure:' in passing", () => {
+    const md = "# Title\n\nA heading such as AI Disclosure: is common in journals.\n";
+    for (const mode of ["md", "ghost"] as const) {
+      const out = renderGhostMarkdown(md, { mode, disclosure: { ...block, position: "end" } });
+      expect(out).toContain("By Claude (Opus 5.5)");
+    }
+  });
+
   it("places it in HTML through the Lua filter, inside the article wrapper", async () => {
     const tmp = mkdtempSync(join(tmpdir(), "iasp-ai-credit-"));
     const prev = process.env.IASP_RENDER_DIR;

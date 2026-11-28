@@ -553,6 +553,8 @@ export function injectAiDisclosures(
   mode: "ghost" | "md" = "ghost",
 ): string {
   if (!metadata || Object.keys(metadata).length === 0) return body;
+  // Legacy behaviour: a sidecar is skipped when the article already carries a hand-written disclosure.
+  if (body.includes("AI Disclosure:") || body.includes("Technical Note:")) return body;
   const tokens = buildTurnTokens(metadata);
   const paragraphs: string[] = [];
   if (metadata.ai_disclosure?.trim()) paragraphs.push(formatDisclosureLine(metadata.ai_disclosure.trim(), tokens));
@@ -570,7 +572,6 @@ export interface DisclosureBlock {
 
 export function injectDisclosureBlock(body: string, block: DisclosureBlock, mode: "ghost" | "md" = "ghost"): string {
   if (!block.position || !block.paragraphs.length) return body;
-  if (body.includes("AI Disclosure:") || body.includes("Technical Note:")) return body;
 
   const variantKey = block.variant.trim().toLowerCase() || "ai";
   const style = NOTE_VARIANT_SPECS[variantKey]?.ghost ?? NOTE_VARIANT_SPECS.ai.ghost;
